@@ -149,7 +149,6 @@ class Go:
 
 def main():
     game = Go(9)
-    
     while (not game.end):
         move = input('next move: ')
         if game.play(move):
