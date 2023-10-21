@@ -25,6 +25,8 @@ class Go:
         self.intersection = []
         self.black_turn = True
         self.end = False
+        self.black_captured = 0
+        self.white_captured = 0
 
         self.board, self.horizontal, self.vertical = self.create_board()
 
@@ -60,29 +62,50 @@ class Go:
     def get_board(self):
         return self.board, self.horizontal, self.vertical
     
-    def count_liberties(self, color):
-        pass
-
-    def rule_state_machine(self):
-        pass
+    def count_liberties(self, stone: Stone, coordinate: tuple):
+        group = self.count_group(stone, coordinate)
+        row, col = coordinate
+        liberties = 0
+        if not self.is_valid_move(row,col):
+            return 0
+        return liberties
+    
+    def count_group(self, stone: Stone, coordinate: tuple):
+        group = []
+        row, col = coordinate
+        if self.is_valid_move(row,col):
+            for dr, dc in [(1,0),(-1,0),(0,1),(0,-1)]:
+                new_row = row + dr
+                new_col = col + dc
+                if (self.board[new_row,new_col] == stone) and ((new_row,new_col) not in group):
+                    group.append((new_row,new_col))
+                    self.count_group(stone,(new_row,new_col))
+        
+        return group
+    
+    def is_valid_move(self,row, col):
+        return 0 <= row < self.board_size and 0 <= col < self.board_size
 
     def play(self,move : str):
         move = move.upper()
         if not self.move_allowed(move):
             return False
         
-        if (self.intersection[self.get_row(int(move[0]))][self.get_col(move[1])] == self.position.EMPTY):
+        row = self.get_row(int(move[0]))
+        col = self.get_col(move[1])
+        
+        if (self.intersection[row][col] == self.position.EMPTY):
             if self.black_turn:
-                self.board[self.get_row(int(move[0]))][self.get_col(move[1])] = self.stones.BLACK
-                self.intersection[self.get_row(int(move[0]))][self.get_col(move[1])] = self.position.OCCUPIED_BY_BLACK
+                self.board[row][col] = self.stones.BLACK
+                self.intersection[row][col] = self.position.OCCUPIED_BY_BLACK
                 self.black_turn = False
             else:
-                self.board[self.get_row(int(move[0]))][self.get_col(move[1])] = self.stones.WHITE
-                self.intersection[self.get_row(int(move[0]))][self.get_col(move[1])] = self.position.OCCUPIED_BY_WHITE
+                self.board[row][col] = self.stones.WHITE
+                self.intersection[row][col] = self.position.OCCUPIED_BY_WHITE
                 self.black_turn = True
         else:
             print("[WARNING]: the intersection is already occupied by", end=' ')
-            if self.intersection[self.get_row(int(move[0]))][self.get_col(move[1])] == self.position.OCCUPIED_BY_BLACK:
+            if self.intersection[row][col] == self.position.OCCUPIED_BY_BLACK:
                 print("back")
             else:
                 print("white")
@@ -133,6 +156,10 @@ def main():
             game.print_board()
         if move == 'end':
             game.end = True
+    
+    check_group = input('coordinate: ')
+    coordinate = (game.get_row(int(check_group[0])),game.get_col(check_group[1]))
+    print(game.get_group(game.board[coordinate[0],coordinate[1]],coordinate))
     
 
 if __name__ == "__main__":
