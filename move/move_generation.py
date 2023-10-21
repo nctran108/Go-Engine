@@ -23,6 +23,8 @@ class Go:
         self.liberties = []
         self.connected = []
         self.intersection = []
+        self.black_turn = True
+        self.end = False
 
         self.board, self.horizontal, self.vertical = self.create_board()
 
@@ -64,9 +66,45 @@ class Go:
     def rule_state_machine(self):
         pass
 
-    def play(self,move):
-        pass
+    def play(self,move : str):
+        move = move.upper()
+        if not self.move_allowed(move):
+            return False
+        
+        if (self.intersection[self.get_row(int(move[0]))][self.get_col(move[1])] == self.position.EMPTY):
+            if self.black_turn:
+                self.board[self.get_row(int(move[0]))][self.get_col(move[1])] = self.stones.BLACK
+                self.intersection[self.get_row(int(move[0]))][self.get_col(move[1])] = self.position.OCCUPIED_BY_BLACK
+                self.black_turn = False
+            else:
+                self.board[self.get_row(int(move[0]))][self.get_col(move[1])] = self.stones.WHITE
+                self.intersection[self.get_row(int(move[0]))][self.get_col(move[1])] = self.position.OCCUPIED_BY_WHITE
+                self.black_turn = True
+        else:
+            print("[WARNING]: the intersection is already occupied by", end=' ')
+            if self.intersection[self.get_row(int(move[0]))][self.get_col(move[1])] == self.position.OCCUPIED_BY_BLACK:
+                print("back")
+            else:
+                print("white")
+            return False
+        
+        return True
+        
 
+    def move_allowed(self,move : str):
+        if len(move) == 2:
+            if move[0].isdigit() and move[1].isalpha():
+                if (int(move[0]) in self.horizontal) and (move[1] in self.vertical):
+                    return True
+                else:
+                    print("move is not in the list")
+                    return False
+            print('wrong move')
+            return False
+        else:
+            print('wrong move size')
+            return False
+        
     def print_board(self):
         index = 0
         for r in self.board:
@@ -88,7 +126,14 @@ class Go:
 
 def main():
     game = Go(9)
-    game.print_board()
+    
+    while (not game.end):
+        move = input('next move: ')
+        if game.play(move):
+            game.print_board()
+        if move == 'end':
+            game.end = True
+    
 
 if __name__ == "__main__":
     main()
