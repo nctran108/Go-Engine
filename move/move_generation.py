@@ -70,21 +70,29 @@ class Go:
             return 0
         return liberties
     
-    def count_group(self, stone: Stone, coordinate: tuple):
-        group = []
-        row, col = coordinate
-        if self.is_valid_move(row,col):
-            for dr, dc in [(1,0),(-1,0),(0,1),(0,-1)]:
-                new_row = row + dr
-                new_col = col + dc
-                if (self.board[new_row,new_col] == stone) and ((new_row,new_col) not in group):
-                    group.append((new_row,new_col))
-                    self.count_group(stone,(new_row,new_col))
+    def get_group(self, stone: Stone, coordinate: tuple):
         
+        def is_valid_move(row, col):
+            return (0 <= row and row < self.board_size) and (0 <= col and col < self.board_size)
+        
+        
+        row, col = coordinate
+        group = []
+        
+        if (self.board[row][col] != stone):
+            return []
+        
+        def count_group(r,c,group):
+            if not is_valid_move(r,c) or self.board[r][c] != stone or (r,c) in group:
+                return
+            group.append((r,c))
+            for dr, dc in [(1,0),(-1,0),(0,1),(0,-1)]:
+                new_row = r + dr
+                new_col = c + dc
+                count_group(new_row,new_col,group) 
+                
+        count_group(row,col,group)
         return group
-    
-    def is_valid_move(self,row, col):
-        return 0 <= row < self.board_size and 0 <= col < self.board_size
 
     def play(self,move : str):
         move = move.upper()
@@ -149,16 +157,13 @@ class Go:
 
 def main():
     game = Go(9)
-    while (not game.end):
-        move = input('next move: ')
-        if game.play(move):
-            game.print_board()
-        if move == 'end':
-            game.end = True
     
-    check_group = input('coordinate: ')
-    coordinate = (game.get_row(int(check_group[0])),game.get_col(check_group[1]))
-    print(game.get_group(game.board[coordinate[0],coordinate[1]],coordinate))
+    #while (not game.end):
+    #    move = input('next move: ')
+    #    if game.play(move):
+    #        game.print_board()
+    #    if move == 'end':
+    #        game.end = True
     
 
 if __name__ == "__main__":
