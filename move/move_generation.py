@@ -63,11 +63,37 @@ class Go:
         return self.board, self.horizontal, self.vertical
     
     def count_liberties(self, stone: Stone, coordinate: tuple):
-        group = self.count_group(stone, coordinate)
-        row, col = coordinate
-        liberties = 0
-        if not self.is_valid_move(row,col):
+        if stone == self.stones.EMPTY:
             return 0
+        group = self.get_group(stone, coordinate)
+        visited = []
+        row, col = coordinate
+
+        def is_valid_move(r, c):
+            return (0 <= r and r < self.board_size) and (0 <= c and c < self.board_size)
+        
+        def flood_fill(r,c):
+            if not is_valid_move(r, c):
+                return 0
+        
+            if (r,c) in visited:
+                return 0
+            visited.append((r,c))
+            
+            if (self.board[r][c] == self.stones.EMPTY):
+                return 1
+            if (self.board[r][c] != self.stones.EMPTY) and (r,c) not in group:
+                return 0
+
+            liberties = 0
+            for dr, dc in [(1,0),(-1,0),(0,1),(0,-1)]:
+                new_row = r + dr
+                new_col = c + dc
+                liberties += flood_fill(new_row,new_col) 
+            return liberties
+
+        liberties = flood_fill(row,col)
+        
         return liberties
     
     def get_group(self, stone: Stone, coordinate: tuple):
@@ -93,12 +119,17 @@ class Go:
                 
         count_group(row,col,group)
         return group
+    
+    def captured(self,stone,coordinate):
+
+        return len(self.get_group(stone,coordinate))
 
     def play(self,move : str):
+        direction = [(-1,0),(1,0),(0,-1),(0,1)]
         move = move.upper()
         if not self.move_allowed(move):
             return False
-        
+
         row = self.get_row(int(move[0]))
         col = self.get_col(move[1])
         

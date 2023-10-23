@@ -22,11 +22,15 @@ def main():
     game.play('6j')
     game.play('9b')
     game.play('6h')
+    game.play('9j')
+    game.play('9h')
+    game.play('8h')
+    game.play('8j')
     game.print_board()
     
     check_group = input('coordinate: ')
     coordinate = (game.get_row(int(check_group[0])),game.get_col(check_group[1].upper()))
-    print(game.get_group(game.board[coordinate[0]][coordinate[1]],coordinate))
+    print(game.count_liberties(game.board[coordinate[0]][coordinate[1]],coordinate))
     
 if __name__ == "__main__":
     main()
