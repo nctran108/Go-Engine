@@ -62,27 +62,24 @@ class Go:
     def get_board(self):
         return self.board, self.horizontal, self.vertical
     
-    def count_liberties(self, stone: Stone, coordinate: tuple):
-        if stone == self.stones.EMPTY:
+    def count_liberties(self, ocupied: POINT_STATES, coordinate: tuple):
+        if ocupied == self.stones.EMPTY:
             return 0
-        group = self.get_group(stone, coordinate)
+        group = self.get_group(ocupied, coordinate)
         visited = []
         row, col = coordinate
 
-        def is_valid_move(r, c):
-            return (0 <= r and r < self.board_size) and (0 <= c and c < self.board_size)
-        
         def flood_fill(r,c):
-            if not is_valid_move(r, c):
+            if not self.is_valid_move(r, c):
                 return 0
         
             if (r,c) in visited:
                 return 0
             visited.append((r,c))
             
-            if (self.board[r][c] == self.stones.EMPTY):
+            if (self.intersection[r][c] == self.position.EMPTY):
                 return 1
-            if (self.board[r][c] != self.stones.EMPTY) and (r,c) not in group:
+            if (self.intersection[r][c] != self.position.EMPTY) and (r,c) not in group:
                 return 0
 
             liberties = 0
@@ -96,20 +93,18 @@ class Go:
         
         return liberties
     
-    def get_group(self, stone: Stone, coordinate: tuple):
-        
-        def is_valid_move(row, col):
+    def is_valid_move(self,row, col):
             return (0 <= row and row < self.board_size) and (0 <= col and col < self.board_size)
-        
-        
+    
+    def get_group(self, ocupied: POINT_STATES, coordinate: tuple):
         row, col = coordinate
         group = []
         
-        if (self.board[row][col] != stone):
+        if (self.intersection[row][col] != ocupied):
             return []
         
         def count_group(r,c,group):
-            if not is_valid_move(r,c) or self.board[r][c] != stone or (r,c) in group:
+            if not self.is_valid_move(r,c) or self.intersection[r][c] != ocupied or (r,c) in group:
                 return
             group.append((r,c))
             for dr, dc in [(1,0),(-1,0),(0,1),(0,-1)]:
@@ -120,12 +115,20 @@ class Go:
         count_group(row,col,group)
         return group
     
-    def captured(self,stone,coordinate):
+    def get_stone(self, row, col):
+        return self.board[row][col]
+    
+    def captured(self,ocupied,coordinate):
+        group = self.get_group(ocupied,coordinate)
 
-        return len(self.get_group(stone,coordinate))
+        for row, col in group:
+            self.board[row][col] = self.stones.EMPTY
+
+        return len(group)
 
     def play(self,move : str):
         direction = [(-1,0),(1,0),(0,-1),(0,1)]
+        captured = []
         move = move.upper()
         if not self.move_allowed(move):
             return False
@@ -135,13 +138,55 @@ class Go:
         
         if (self.intersection[row][col] == self.position.EMPTY):
             if self.black_turn:
-                self.board[row][col] = self.stones.BLACK
                 self.intersection[row][col] = self.position.OCCUPIED_BY_BLACK
-                self.black_turn = False
+                liberties = self.count_liberties(self.position.OCCUPIED_BY_BLACK,(row,col))
+                if liberties > 0:
+                    self.board[row][col] = self.stones.BLACK      
+                    self.black_turn = False
+                else:
+                    is_valid = False
+                    for dr,dc in direction:
+                        new_row = row + dr
+                        new_col = col + dc
+                        if self.is_valid_move(new_row,new_col):
+                            if self.get_stone(new_row,new_col) == self.stones.WHITE:
+                                white_liberties = self.count_liberties(self.position.OCCUPIED_BY_WHITE,(new_row,new_col))
+                                if white_liberties == 0:
+                                    captured.append((new_row,new_col))
+                                    is_valid = True
+                    if is_valid:
+                        self.board[row][col] = self.stones.BLACK
+                        for coordinate in captured:
+                            self.white_captured += self.captured(self.position.OCCUPIED_BY_WHITE,coordinate)
+                        self.black_turn = False
+                    else:
+                        print("[Warning] the move is invalid")
+                        self.intersection[row][col] = self.position.EMPTY
             else:
-                self.board[row][col] = self.stones.WHITE
                 self.intersection[row][col] = self.position.OCCUPIED_BY_WHITE
-                self.black_turn = True
+                liberties = self.count_liberties(self.position.OCCUPIED_BY_WHITE,(row,col))
+                if liberties > 0:
+                    self.board[row][col] = self.stones.WHITE
+                    self.black_turn = True
+                else:
+                    is_valid = False
+                    for dr,dc in direction:
+                        new_row = row + dr
+                        new_col = col + dc
+                        if self.is_valid_move(new_row,new_col):
+                            if self.get_stone(new_row,new_col) == self.stones.BLACK:
+                                black_liberties = self.count_liberties(self.position.OCCUPIED_BY_BLACK,(new_row,new_col))
+                                if black_liberties == 0:
+                                    captured.append((new_row,new_col))
+                                    is_valid = True
+                    if is_valid:
+                        self.board[row][col] = self.stones.WHITE
+                        for coordinate in captured:
+                            self.black_captured += self.captured(self.position.OCCUPIED_BY_BLACK,coordinate)
+                        self.black_turn = True
+                    else:
+                        self.intersection[row][col] = self.position.EMPTY
+                        print("[Warning] the move is invalid")
         else:
             print("[WARNING]: the intersection is already occupied by", end=' ')
             if self.intersection[row][col] == self.position.OCCUPIED_BY_BLACK:

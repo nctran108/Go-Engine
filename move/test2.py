@@ -30,7 +30,7 @@ def main():
     
     check_group = input('coordinate: ')
     coordinate = (game.get_row(int(check_group[0])),game.get_col(check_group[1].upper()))
-    print(game.count_liberties(game.board[coordinate[0]][coordinate[1]],coordinate))
+    print(game.count_liberties(game.intersection[coordinate[0]][coordinate[1]],coordinate))
     
 if __name__ == "__main__":
     main()
