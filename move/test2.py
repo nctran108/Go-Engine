@@ -29,8 +29,8 @@ def main():
     game.print_board()
     
     check_group = input('coordinate: ')
-    coordinate = (game.get_row(int(check_group[0])),game.get_col(check_group[1].upper()))
-    print(game.count_liberties(game.intersection[coordinate[0]][coordinate[1]],coordinate))
+    row, col = (game.get_row(int(check_group[0])),game.get_col(check_group[1].upper()))
+    print(game.count_liberties(game.intersection[row][col],row,col))
     
 if __name__ == "__main__":
     main()
