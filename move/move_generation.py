@@ -208,7 +208,8 @@ class Go:
 
             # place stone on the board
             self.board[row][col] = self.current_player()
-
+            
+            ##TODO: add correct intersection so the capture rule can capture correctly
             # mark the intersection accupied 
             self.intersection[row][col] = self.occupied(self.board[row][col])
 
