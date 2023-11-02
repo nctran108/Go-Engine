@@ -169,15 +169,15 @@ class Go:
             # mark the intersection accupied 
             self.intersection[row][col] = self.occupied(self.board[row][col])
 
-            # check for capture and update the board
-            self.capture_stones(row,col)
-
             # check for the ko rule
             if self.is_ko():
                 self.board[row][col] = self.stones.EMPTY
                 self.intersection[row][col] = self.occupied(self.board[row][col])
                 self.previous_board = None
                 return False
+            else:
+                # check for capture and update the board
+                self.capture_stones(row,col)
 
             # Switch the current player
             self.black_turn = not self.black_turn
@@ -250,12 +250,12 @@ class Go:
 def main():
     game = Go(9)
     
-    #while (not game.end):
-    #    move = input('next move: ')
-    #    if game.play(move):
-    #        game.print_board()
-    #    if move == 'end':
-    #        game.end = True
+    while (not game.end):
+        move = input('next move: ')
+        if game.play(move):
+            game.print_board()
+        if move == 'end':
+            game.end = True
     
 
 if __name__ == "__main__":
