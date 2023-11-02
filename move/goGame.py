@@ -28,6 +28,7 @@ class Go:
         self.ko = []
 
         self.board, self.horizontal, self.vertical = self.create_board()
+        self.previous_board = None
 
     def create_board(self) -> Tuple[List,List,List]:
         board = []
@@ -159,6 +160,9 @@ class Go:
 
     def make_move(self, row, col):
         if self.is_valid_move(row,col):
+            # create copy board
+            self.previous_board = [row[:] for row in self.board]
+
             # place stone on the board
             self.board[row][col] = self.current_player()
 
@@ -169,12 +173,22 @@ class Go:
             self.capture_stones(row,col)
 
             # check for the ko rule
+            if self.is_ko():
+                self.board[row][col] = self.stones.EMPTY
+                self.intersection[row][col] = self.occupied(self.board[row][col])
+                self.previous_board = None
+                return False
 
             # Switch the current player
             self.black_turn = not self.black_turn
             return True
         else:
             return False
+        
+    def is_ko(self):
+        if self.previous_board is None:
+            return False
+        return self.previous_board == self.board
 
     def play(self,move : str):
         move = move.upper()
