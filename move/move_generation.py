@@ -308,6 +308,7 @@ class Go:
 
 def main():
     game = Go(9)
+    game.print_board()
     
     while (not game.end):
         move = input('next move: ')
