@@ -18,8 +18,6 @@ class POINT_STATES:
 class Go:
     def __init__(self, size):
         self.board_size = size
-        self.stones = Stone()
-        self.position = POINT_STATES()
         self.intersection = []
         self.black_turn = True
         self.end = False
@@ -46,8 +44,8 @@ class Go:
             stone = []
             point = []
             for j in range(self.board_size):
-                stone.append(self.stones.EMPTY)
-                point.append(self.position.EMPTY)
+                stone.append(Stone().EMPTY)
+                point.append(POINT_STATES().EMPTY)
             board.append(stone)
             self.intersection.append(point)
             # create horizontal label
@@ -84,7 +82,7 @@ class Go:
         return:
             int: the number of liberties
         """
-        if ocupied == self.stones.EMPTY:
+        if ocupied == Stone().EMPTY:
             return 0
         # get the whole group
         group = self.get_group(ocupied, row, col)
@@ -103,10 +101,10 @@ class Go:
             visited.append((r,c))
             
             # check if the intersection is empty then count 1
-            if (self.intersection[r][c] == self.position.EMPTY):
+            if (self.intersection[r][c] == POINT_STATES().EMPTY):
                 return 1
             # check if the intersection is occupied but not in same group then not count
-            if (self.intersection[r][c] != self.position.EMPTY) and (r,c) not in group:
+            if (self.intersection[r][c] != POINT_STATES().EMPTY) and (r,c) not in group:
                 return 0
 
             # if the stone in the group and not empty then count the liberties of that stone in 4 directions
@@ -167,7 +165,7 @@ class Go:
 
     def remove_group(self, row, col):
         # check is the stone is empty
-        if self.board[row][col] == self.stones.EMPTY:
+        if self.board[row][col] == Stone().EMPTY:
             return
         
         # get the whole group
@@ -175,53 +173,56 @@ class Go:
 
         # remove whole group
         for stone_row, stone_col in groups:
-            self.board[stone_row][stone_col] = self.stones.EMPTY
+            self.board[stone_row][stone_col] = Stone().EMPTY
+            self.intersection[stone_row][stone_col] = POINT_STATES().EMPTY
 
     
     def current_player(self):
         """this function reture the current player as stone"""
         if self.black_turn:
-            return self.stones.BLACK
+            return Stone().BLACK
         else:
-            return self.stones.WHITE
+            return Stone().WHITE
     
     def opposite_player(self):
         """this function return the opponent player as stone"""
         if self.black_turn:
-            return self.stones.WHITE
+            return Stone().WHITE
         else:
-            return self.stones.BLACK
+            return Stone().BLACK
         
     def occupied(self, stone):
         """this function return the correct intersection of the board"""
-        if stone == self.stones.BLACK:
-            return self.position.OCCUPIED_BY_BLACK
-        elif stone == self.stones.WHITE:
-            return self.position.OCCUPIED_BY_WHITE
+        if stone == Stone().BLACK:
+            return POINT_STATES().OCCUPIED_BY_BLACK
+        elif stone == Stone().WHITE:
+            return POINT_STATES().OCCUPIED_BY_WHITE
         else:
-            return self.position.EMPTY
+            return POINT_STATES().EMPTY
 
     def make_move(self, row, col):
         if self.is_valid_move(row,col):
-            # create copy board
-            self.previous_board = [row[:] for row in self.board]
-
             # place stone on the board
             self.board[row][col] = self.current_player()
-            
-            ##TODO: add correct intersection so the capture rule can capture correctly
+
             # mark the intersection accupied 
             self.intersection[row][col] = self.occupied(self.board[row][col])
 
-            # check for the ko rule
-            if self.is_ko():
-                self.board[row][col] = self.stones.EMPTY
-                self.intersection[row][col] = self.occupied(self.board[row][col])
-                self.previous_board = None
-                return False
-            else:
-                # check for capture and update the board
-                self.capture_stones(row,col)
+            # check the stone liberties
+            liberties = self.count_liberties(self.intersection[row][col],row,col)
+
+            if liberties == 0:
+                # check for the ko rule
+                if self.is_ko():
+                    self.board[row][col] = Stone().EMPTY
+                    self.intersection[row][col] = self.occupied(self.board[row][col])
+                    self.previous_board = None
+                    return False
+                # create copy board
+                self.previous_board = [row[:] for row in self.board]
+                
+            # check for capture and update the board
+            self.capture_stones(row,col)
 
             # Switch the current player
             self.black_turn = not self.black_turn
@@ -252,7 +253,7 @@ class Go:
         col = self.get_col(move[1])
         
         # if the intersection of that row and col is available then play
-        if (self.intersection[row][col] == self.position.EMPTY):
+        if (self.intersection[row][col] == POINT_STATES().EMPTY):
             # make the move
             status = self.make_move(row,col)
             # return if the move is invalid
@@ -262,7 +263,7 @@ class Go:
         # else the intersect is occupied and can't play
         else:
             print("[WARNING]: the intersection is already occupied by", end=' ')
-            if self.intersection[row][col] == self.position.OCCUPIED_BY_BLACK:
+            if self.intersection[row][col] == POINT_STATES().OCCUPIED_BY_BLACK:
                 print("back")
             else:
                 print("white")
@@ -304,8 +305,21 @@ class Go:
         """this function empty the whole board"""
         for row_index in range(self.board_size):
             for col_index in range(self.board_size):
-                self.board[row_index][col_index] = self.stones.EMPTY
+                self.board[row_index][col_index] = Stone().EMPTY
 
+    def print_intersect(self):
+        """this function print out the whole board to display players stones"""
+        index = 0
+        for r in self.intersection:
+            print(str(self.horizontal[index]).rjust(2, ' '), end=' ')
+            for c in r:
+                print(c,end=' ')
+            print()
+            index = index + 1
+        print('  ',end=' ')
+        for letter in self.vertical:
+            print(letter,end=" ")
+        print('\n')
 
 def main():
     game = Go(9)
