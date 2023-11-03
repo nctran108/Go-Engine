@@ -23,7 +23,7 @@ class Go:
         self.end = False
         self.black_captured = 0
         self.white_captured = 0
-        self.ko = []
+        self.both_passed = False
 
         self.board, self.horizontal, self.vertical = self.create_board()
         self.previous_board = None
@@ -235,6 +235,12 @@ class Go:
         if self.previous_board is None:
             return False
         return self.previous_board == self.board
+    
+    def player_passed(self,move):
+        return move.upper() == "PASS"
+    
+    def score(self):
+        return True
 
     def play(self,move : str):
         """this function use to play the game
@@ -251,6 +257,19 @@ class Go:
         # convert move label to row and col
         row = self.get_row(int(move[0]))
         col = self.get_col(move[1])
+
+        # check if both player pass
+        if self.player_passed(move):
+            # check if both player passed
+
+            if self.both_passed:
+                # check score
+                self.score()
+                return False
+            else:
+                # only one passed
+                self.black_turn = not self.black_turn
+                return True
         
         # if the intersection of that row and col is available then play
         if (self.intersection[row][col] == POINT_STATES().EMPTY):
