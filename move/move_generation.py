@@ -265,11 +265,11 @@ class Go:
             if self.both_passed:
                 # check score
                 self.score()
-                return False
+                self.end = True
             else:
                 # only one passed
                 self.black_turn = not self.black_turn
-                return True
+            return True
         
         # if the intersection of that row and col is available then play
         if (self.intersection[row][col] == POINT_STATES().EMPTY):
