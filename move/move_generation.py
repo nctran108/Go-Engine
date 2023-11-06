@@ -23,7 +23,7 @@ class Go:
         self.end = False
         self.black_captured = 0
         self.white_captured = 0
-        self.both_passed = False
+        self.both_passed = 0
 
         self.board, self.horizontal, self.vertical = self.create_board()
         self.previous_board = None
@@ -237,7 +237,7 @@ class Go:
         return self.previous_board == self.board
     
     def player_passed(self,move):
-        return move.upper() == "PASS"
+        return move == "PASS"
     
     def score(self):
         return True
@@ -254,15 +254,11 @@ class Go:
         if not self.move_allowed(move):
             return False
 
-        # convert move label to row and col
-        row = self.get_row(int(move[0]))
-        col = self.get_col(move[1])
-
         # check if both player pass
         if self.player_passed(move):
+            self.both_passed += 1
             # check if both player passed
-
-            if self.both_passed:
+            if self.both_passed == 2:
                 # check score
                 self.score()
                 self.end = True
@@ -270,6 +266,14 @@ class Go:
                 # only one passed
                 self.black_turn = not self.black_turn
             return True
+
+        # if one play passed and the other still play then reset this to keep play
+        if self.both_passed > 0:
+            self.both_passed = 0
+        
+        # convert move label to row and col
+        row = self.get_row(int(move[0]))
+        col = self.get_col(move[1])
         
         # if the intersection of that row and col is available then play
         if (self.intersection[row][col] == POINT_STATES().EMPTY):
@@ -303,6 +307,8 @@ class Go:
             print('wrong move')
             return False
         else:
+            if self.player_passed(move):
+                return True
             print('wrong move size')
             return False
         
@@ -348,8 +354,6 @@ def main():
         move = input('next move: ')
         if game.play(move):
             game.print_board()
-        if move == 'end':
-            game.end = True
     
 
 if __name__ == "__main__":
