@@ -259,8 +259,7 @@ class Go:
             self.both_passed += 1
             # check if both player passed
             if self.both_passed == 2:
-                # check score
-                self.score()
+                # end game
                 self.end = True
             else:
                 # only one passed
@@ -346,15 +345,4 @@ class Go:
             print(letter,end=" ")
         print('\n')
 
-def main():
-    game = Go(9)
-    game.print_board()
-    
-    while (not game.end):
-        move = input('next move: ')
-        if game.play(move):
-            game.print_board()
-    
 
-if __name__ == "__main__":
-    main()
