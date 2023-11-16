@@ -270,9 +270,13 @@ class Go:
         if self.both_passed > 0:
             self.both_passed = 0
         
+        # Separate numbers and letters
+        numbers = int(''.join(char for char in move if char.isdigit()))
+        letters = ''.join(char for char in move if char.isalpha())
+        
         # convert move label to row and col
-        row = self.get_row(int(move[0]))
-        col = self.get_col(move[1])
+        row = self.get_row(numbers)
+        col = self.get_col(letters)
         
         # if the intersection of that row and col is available then play
         if (self.intersection[row][col] == POINT_STATES().EMPTY):
@@ -296,20 +300,18 @@ class Go:
 
     def move_allowed(self,move : str):
         """this function check the player move to see if it is valid move"""
-        if len(move) == 2:
-            if move[0].isdigit() and move[1].isalpha():
-                if (int(move[0]) in self.horizontal) and (move[1] in self.vertical):
-                    return True
-                else:
-                    print("move is not in the list")
-                    return False
-            print('wrong move')
-            return False
-        else:
-            if self.player_passed(move):
+        if self.player_passed(move):
+            return True
+        # Separate numbers and letters
+        numbers = ''.join(char for char in move if char.isdigit())
+        letters = ''.join(char for char in move if char.isalpha())
+
+        if not any(not char.isalnum() for char in move): # check for special char
+            if move[-1].isalpha() and int(numbers) in self.horizontal and letters.upper() in self.vertical:
                 return True
-            print('wrong move size')
-            return False
+        
+        print('move invalid')
+        return False
         
     def print_board(self):
         """this function print out the whole board to display players stones"""
