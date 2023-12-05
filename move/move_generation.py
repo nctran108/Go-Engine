@@ -12,7 +12,7 @@ class POINT_STATES:
     def __init__(self) -> None:
         self.EMPTY = 0
         self.OCCUPIED_BY_WHITE = 1
-        self.OCCUPIED_BY_BLACK = 2
+        self.OCCUPIED_BY_BLACK = -1
         
 
 class Go:
