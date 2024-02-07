@@ -1,4 +1,4 @@
-from move.move_generation import Go, Stone, POINT_STATES
+from go.move_generation import Go, Stone, POINT_STATES
 
 def main():
     game = Go(9)

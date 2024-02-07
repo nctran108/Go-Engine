@@ -1,5 +1,5 @@
-from move.move_generation import Go
-from move.score import Score
+from go.move_generation import Go
+from go.score import Score
 import random
 
 def main():
