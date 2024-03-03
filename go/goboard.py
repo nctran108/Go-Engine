@@ -1,6 +1,7 @@
 import copy
 from go.gotypes import Player, Point
 from go import zobrist
+from go.score import compute_game_result
 
 class Move():
     def __init__(self, point=None, is_pass= False, is_resign=False) -> None:
@@ -57,6 +58,9 @@ class GoString():
                 self.color == other.color and \
                 self.stones == other.stones and \
                 self.liberties == other.liberties
+    
+    def __deepcopy__(self, memodict={}):
+        return GoString(self.color, self.stones, copy.deepcopy(self.liberties))
 
 class Board():
     def __init__(self, num_rows, num_cols):
@@ -67,6 +71,8 @@ class Board():
 
     def place_stone(self, player, point : Point):
         assert self.is_on_grid(point)
+        if self._grid.get(point) is not None:
+            print("Illigal play on %s" % str(point))
         assert self._grid.get(point) is None
         adjacent_same_color = []
         adjacent_opposite_color = []
@@ -139,10 +145,10 @@ class GameState():
         self.next_player = next_player
         self.previous_state = previous
         if self.previous_state is None:
-            self.previous_state = frozenset()
+            self.previous_states = frozenset()
         else:
-            self.previous_state = frozenset(
-                previous.previous_state |
+            self.previous_states = frozenset(
+                previous.previous_states |
                 {(previous.next_player, previous.board.zobrist_hash())})
         self.last_move = move
 
@@ -158,7 +164,7 @@ class GameState():
     def new_game(cls, board_size):
         if isinstance(board_size, int):
             board_size = (board_size, board_size)
-            board = Board(*board_size)
+        board = Board(*board_size)
         return GameState(board, Player.black, None, None)
     
     def is_over(self):
@@ -189,7 +195,7 @@ class GameState():
         next_board = copy.deepcopy(self.board)
         next_board.place_stone(player, move.point)
         next_situation = (player.other, next_board.zobrist_hash())
-        return next_situation in self.previous_state
+        return next_situation in self.previous_states
     
     def is_valid_move(self, move: Move):
         if self.is_over():
@@ -200,3 +206,25 @@ class GameState():
                  not self.is_move_self_capture(self.next_player, move) and 
                  not self.does_move_violate_ko(self.next_player, move))
     
+    def legal_move(self):
+        """this function return every legal moves on the board"""
+        moves = []
+        for row in range(1, self.board.num_rows + 1):
+            for col in range(1, self.board.num_cols + 1):
+                move = Move.play(Point(row,col))
+                if self.is_valid_move(move):
+                    moves.append(move)
+        
+        # this two moves are always legal
+        moves.append(Move.pass_turn())
+        moves.append(Move.resign())
+
+        return moves
+    
+    def winner(self):
+        if not self.is_over():
+            return None
+        if self.last_move.is_resign:
+            return self.next_player
+        game_result = compute_game_result(self)
+        return game_result.winner

@@ -1,10 +1,10 @@
-from go.goboard_slow import GameState, Move, Player
+from go.gotypes import Player
 from go.agent import Agent, naive
 import random
 import math
 
 class MCTSNode(object):
-    def __init__(self, game_state: GameState, parent: 'MCTSNode'=None, move: Move=None):
+    def __init__(self, game_state, parent: 'MCTSNode'=None, move=None):
         self.game_state = game_state
         self.parent = parent
         self.move = move
@@ -61,12 +61,18 @@ class MCTSAgent(Agent):
             while (not node.can_add_child()) and (not node.is_terminal()):
                 node = self.select_child(node)
             
+            # add a new child node into the tree.
             if node.can_add_child():
-                winner = self.simulate_random_game(node.game_state)
-                while node is not None:
-                    node.record_win(winner)
-                    node = node.parent
+                node = node.add_random_child()
+            
+            # simulate a random game for this node
+            winner = self.simulate_random_game(node.game_state)
 
+            # propagate scores back up the tree            
+            while node is not None:
+                node.record_win(winner)
+                node = node.parent
+        # pick a move
         best_move = None
         best_pct = -1.0
         for child in root.children:
@@ -74,6 +80,7 @@ class MCTSAgent(Agent):
             if child_percentage > best_pct:
                 best_pct = child_percentage
                 best_move = child.move
+                print('Select move %s with win pct %.3f' % (best_move, best_pct))
         return best_move
     
     def select_child(self, node: MCTSNode):
@@ -89,7 +96,8 @@ class MCTSAgent(Agent):
                 best_child = child
         return best_child
     
-    def simulate_random_game(game: GameState):
+    @staticmethod
+    def simulate_random_game(game):
         bots = {
             Player.black: naive.RandomBot(),
             Player.white: naive.RandomBot()

@@ -1,5 +1,6 @@
 import copy
 from go.gotypes import Player, Point
+from go.score import compute_game_result
 
 class Move():
     """this class decide which type of move on the game"""
@@ -133,7 +134,7 @@ class Board():
             return None
         return string.color
     
-    def get_go_string(self, point : Point):
+    def get_go_string(self, point : Point) -> 'GoString':
         """this function get the whole group/ string"""
         string = self._grid.get(point)
         if string is None:
@@ -162,7 +163,7 @@ class GameState():
         """use this to empty the board and play new game."""
         if isinstance(board_size, int):
             board_size = (board_size, board_size)
-            board = Board(*board_size)
+        board = Board(*board_size)
         return GameState(board, Player.black, None, None)
     
     def is_over(self):
@@ -242,5 +243,5 @@ class GameState():
             return None
         if self.last_move.is_resign:
             return self.next_player
-        game_result = self.compute_game_result(self)
+        game_result = compute_game_result(self)
         return game_result.winner
