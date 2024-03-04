@@ -7,13 +7,13 @@ class Player(enum.Enum):
     white = 2
 
     @property
-    def other(self):
+    def other(self) -> "Player":
         """select other color"""
         return Player.black if self == Player.white else Player.white
     
 class Point(namedtuple('Point', 'row col')):
     """this class is an immutable and tuple-like data structure that preresentation the intersect/point on the board game with row and col"""
-    def neighbors(self):
+    def neighbors(self) -> "Point":
         return [
             Point(self.row - 1, self.col),
             Point(self.row + 1, self.col),
