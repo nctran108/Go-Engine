@@ -143,13 +143,13 @@ class GoDataProcessor:
         files_needed = set(file_name for file_name, index in samples)
         file_names = []
         for zip_file_name in files_needed:
-            file_name = zip_file_name.replace('tar.gz', '') + data_type
+            file_name = zip_file_name.replace('.tar.gz', '') + data_type
             file_names.append(file_name)
 
         feature_list = []
         label_list = []
         for file_name in file_names:
-            file_prefix = file_name.replace('tar.gz', '')
+            file_prefix = file_name.replace('.tar.gz', '')
             base = self.data_dir + '/processed/' + file_prefix + '_featuress_*.npy'
             for feature_file in glob.glob(base):
                 label_file = feature_file.replace('features', 'labels')
