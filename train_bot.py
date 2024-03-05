@@ -6,7 +6,6 @@ from go.agent.predict import DeepLearningAgent, load_prediction_agent
 from go.data.processor import GoDataProcessor
 from go.encoders.sevenplane import SevenPlaneEncoder
 from networks import large
-from keras.callbacks import ModelCheckpoint
 
 if __name__ == '__main__':
     go_board_size = 19
