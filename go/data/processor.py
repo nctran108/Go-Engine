@@ -18,17 +18,17 @@ from go.data.sampling import Sampler
 class GoDataProcessor:
     def __init__(self, encoder='oneplane', data_directory='data', size = 19):
         self.encoder = get_encoder_by_name(encoder, size)
-        self.data_dir = os.getcwd() + '/' + data_directory
+        self.data_dir = os.getcwd() + '/go/' + data_directory
         self.size = size
 
     def load_go_data(self, data_type='train', num_samples=1000):
-        index = KGSIndex(data_dir=self.data_dir)
+        index = KGSIndex(data_directory=self.data_dir+ '/raw')
         index.download_files()
 
         sampler = Sampler(data_dir=self.data_dir + '/raw')
         data = sampler.draw_data(data_type, num_samples)
 
-        zip_names = set()
+        zip_names : (str) = set()
         indices_by_zip_name = {}
         for filename, index in data:
             zip_names.add(filename)
@@ -36,12 +36,15 @@ class GoDataProcessor:
                 indices_by_zip_name[filename] = []
             indices_by_zip_name[filename].append(index)
         
-        if not os.path.isdir(self.data_dir + '/processed'):
-            os.makedirs(self.data_dir + '/processed') # create the folder if not exist
+        processed_file_path = self.data_dir + "/processed"
+        
+        if not os.path.isdir(processed_file_path):
+            os.makedirs(processed_file_path) # create the folder if not exist
+        
         for zip_name in zip_names:
             base_name = zip_name.replace('.tar.gz', '')
             data_file_name = base_name + data_type
-            if not os.path.isfile(self.data_dir + '/processed/' + data_file_name):
+            if not os.path.isfile(processed_file_path + "/" + data_file_name):
                 self.process_zip(zip_name, data_file_name, indices_by_zip_name[zip_name])
         
         features_and_labels = self.consolidate_games(data_type, data)
@@ -64,7 +67,7 @@ class GoDataProcessor:
             if not name.endswith('.sgf'):
                 raise ValueError(name + ' is not a valid sgf')
             sgf_content = zip_file.extractfile(name).read()
-            sgf = Sgf_game.from_string(sgf_content)
+            sgf = Sgf_game.from_string(sgf_content.decode('utf-8'))
 
             game_state, first_move_done = self.get_handicap(sgf,sgf.get_size())
 
@@ -106,8 +109,8 @@ class GoDataProcessor:
             name = name_list[index + 1]
             if name.endswith('.sgf'):
                 sgf_content = zip_file.extractfile(name).read()
-                sgf = Sgf_game.from_string(sgf_content)
-                game_state, first_move_done = self.get_handicap(sgf)
+                sgf = Sgf_game.from_string(sgf_content.decode('utf-8'))
+                game_state, first_move_done = self.get_handicap(sgf,self.size)
 
                 num_moves = 0
                 for item in sgf.main_sequence_iter():
@@ -162,3 +165,13 @@ class GoDataProcessor:
         np.save('{}/labels_{}.npy'.format(self.data_dir + '/processed/', data_type), labels)
 
         return features, labels
+    
+    def unzip_data(self, zip_file_name):
+        this_gz = gzip.open(self.data_dir + '/raw/' + zip_file_name)  # <1>
+
+        tar_file = zip_file_name[0:-3]  # <2>
+        this_tar = open(self.data_dir + '/raw/' + tar_file, 'wb')
+
+        shutil.copyfileobj(this_gz, this_tar)  # <3>
+        this_tar.close()
+        return tar_file

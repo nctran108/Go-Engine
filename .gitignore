@@ -1,3 +1,5 @@
 kgs_index.html
 go/data/raw
 go/data/processed
+*.tar.gz
+*.tar

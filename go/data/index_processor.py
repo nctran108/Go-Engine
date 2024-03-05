@@ -5,7 +5,7 @@ import six
 
 from urllib.request import urlopen, urlretrieve
 
-def _worker(url_and_target):
+def worker(url_and_target):
     """child processor"""
     try:
         (url, target_path) = url_and_target
@@ -18,11 +18,11 @@ class KGSIndex:
     def __init__(self,
                  kgs_url='https://u-go.net/gamerecords/',
                  index_page='kgs_index.html',
-                 data_dir='data/raw'):
+                 data_directory='data/raw'):
         self.kgs_url = kgs_url
         self.index_page = index_page
-        self.data_dir = os.getcwd() + '/go/' + data_dir
-        self.file_infos = []
+        self.data_dir = data_directory
+        self.file_info = []
         self.urls = []
         self._load_index()
 
@@ -42,7 +42,7 @@ class KGSIndex:
             num_games = int(split_file_name[len(split_file_name) - 2]) # the num games at index 3
             print(filename + ' ' + str(num_games))
             # store file infos
-            self.file_infos.append({'url': url, 'filename': filename, 'num_games': num_games})
+            self.file_info.append({'url': url, 'filename': filename, 'num_games': num_games})
     
     def _create_index_page(self):
         """If there is no local html contain links to files, create one."""
@@ -67,7 +67,7 @@ class KGSIndex:
             os.makedirs(self.data_dir) # create the folder if not exist
         
         urls_to_download = [] # contain urls and file_paths to download
-        for file_info in self.file_infos:
+        for file_info in self.file_info:
             url = file_info['url']
             file_name = file_info['filename']
             file_path = self.data_dir + '/' + file_name
@@ -76,7 +76,7 @@ class KGSIndex:
         cores = multiprocessing.cpu_count()
         pool = multiprocessing.Pool(processes=cores) # create child processors
         try:
-            it = pool.imap(_worker, urls_to_download) # multiprocessing
+            it = pool.imap(worker, urls_to_download) # multiprocessing
             for _ in it:
                 pass
             pool.close()
