@@ -83,7 +83,7 @@ class GoDataProcessor:
             if not name.endswith('.sgf'):
                 raise ValueError(name + ' is not a valid sgf')
             sgf_content = zip_file.extractfile(name).read()
-            sgf = Sgf_game.from_string(sgf_content)
+            sgf = Sgf_game.from_string(sgf_content.decode())
 
             game_state, first_move_done = self.get_handicap(sgf)
 
@@ -166,6 +166,7 @@ class GoDataProcessor:
         return game_state, first_move_done
 
     def map_to_workers(self, data_type, samples):
+        print('Start workers')
         zip_names = set()
         indices_by_zip_name = {}
         for filename, index in samples:
@@ -191,6 +192,7 @@ class GoDataProcessor:
             pool.terminate()
             pool.join()
             sys.exit(-1)
+        print('worker ended')
 
     def num_total_examples(self, zip_file, game_list, name_list):
         total_examples = 0
@@ -198,7 +200,7 @@ class GoDataProcessor:
             name = name_list[index + 1]
             if name.endswith('.sgf'):
                 sgf_content = zip_file.extractfile(name).read()
-                sgf = Sgf_game.from_string(sgf_content)
+                sgf = Sgf_game.from_string(sgf_content.decode())
                 game_state, first_move_done = self.get_handicap(sgf)
 
                 num_moves = 0
