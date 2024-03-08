@@ -14,8 +14,10 @@ if __name__ == '__main__':
     processor = GoDataProcessor(encoder=encoder.name())
 
     X , y = processor.load_go_data(num_samples=100)
+    print("Got features and layers")
 
     input_shape = (encoder.num_planes, go_board_size, go_board_size)
+    
     model = Sequential()
     network_layers = large.layers(input_shape=input_shape)
 
@@ -34,8 +36,9 @@ if __name__ == '__main__':
             verbose=1)
 
     deep_learning_bot = DeepLearningAgent(model, encoder)
-    deep_learning_bot.serialize("../go/agent/deep_bot.h5")
+    h5file = h5py.File("./go/agent/deep_bot.h5", 'w')
+    deep_learning_bot.serialize(h5file)
 
-    model_file = h5py.File("../go/agent/deep_bot.h5", 'r')
+    model_file = h5py.File("./go/agent/deep_bot.h5", 'r')
     bot_from_file = load_prediction_agent(model_file)
     

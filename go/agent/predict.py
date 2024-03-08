@@ -41,6 +41,7 @@ class DeepLearningAgent(Agent):
         h5file['encoder'].attrs['board_height'] = self.encoder.board_height
         
         h5file.create_group('model')
+        print(h5file['model'])
         kerasutil.save_model_to_hdf5_group(self.model, h5file['model'])
 
 def load_prediction_agent(h5file):

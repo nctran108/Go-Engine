@@ -18,9 +18,9 @@ from go.data.index_processor import KGSIndex
 from go.data.sampling import Sampler
 from go.data.generator import DataGenerator
 from go.encoders.base import get_encoder_by_name
+from go.utils import print_board
 
-
-def worker(jobinfo):
+def worker(jobinfo):   
     try:
         clazz, encoder, zip_file, data_file_name, game_list = jobinfo
         clazz(encoder=encoder).process_zip(zip_file, data_file_name, game_list)
@@ -67,6 +67,8 @@ class GoDataProcessor:
         return tar_file
 
     def process_zip(self, zip_file_name, data_file_name, game_list):
+        current = multiprocessing.current_process()
+
         tar_file = self.unzip_data(zip_file_name)
         zip_file = tarfile.open(self.data_dir + '/' + tar_file)
         name_list = zip_file.getnames()
@@ -83,7 +85,7 @@ class GoDataProcessor:
             if not name.endswith('.sgf'):
                 raise ValueError(name + ' is not a valid sgf')
             sgf_content = zip_file.extractfile(name).read()
-            sgf = Sgf_game.from_string(sgf_content.decode())
+            sgf = Sgf_game.from_string(sgf_content.decode('utf-8'))
 
             game_state, first_move_done = self.get_handicap(sgf)
 
@@ -102,6 +104,8 @@ class GoDataProcessor:
                         labels[counter] = self.encoder.encode_point(point)
                         counter += 1
                     game_state = game_state.apply_move(move)
+                    #print('[processor: ',current.ident, ']', flush=True)
+                    #print_board(game_state.board)
                     first_move_done = True
 
         feature_file_base = self.data_dir + '/' + data_file_name + '_features_%d'
@@ -109,6 +113,7 @@ class GoDataProcessor:
 
         chunk = 0  # Due to files with large content, split up after chunksize
         chunksize = 1024
+        print(feature_shape)
         while features.shape[0] >= chunksize:
             feature_file = feature_file_base % chunk
             label_file = label_file_base % chunk
@@ -117,6 +122,9 @@ class GoDataProcessor:
             current_labels, labels = labels[:chunksize], labels[chunksize:]
             np.save(feature_file, current_features)
             np.save(label_file, current_labels)
+        print('[processor: ', current.ident, 'task done]', flush=True)
+        return True
+        
 
     def consolidate_games(self, name, samples):
         files_needed = set(file_name for file_name, index in samples)
@@ -182,17 +190,25 @@ class GoDataProcessor:
             if not os.path.isfile(self.data_dir + '/' + data_file_name):
                 zips_to_process.append((self.__class__, self.encoder_string, zip_name,
                                         data_file_name, indices_by_zip_name[zip_name]))
-
         cores = multiprocessing.cpu_count()  # Determine number of CPU cores and split work load among them
         pool = multiprocessing.Pool(processes=cores)
-        p = pool.map_async(worker, zips_to_process)
+
         try:
-            _ = p.get()
-        except KeyboardInterrupt:  # Caught keyboard interrupt, terminating workers
+            #async_results = [pool.apply_async(worker, (zip_to_process,)) for zip_to_process in zips_to_process]
+            p = pool.map_async(worker, zips_to_process).wait()
+            # wait for asynchronous operation to finish
+            #for async_result in async_results:
+            #    async_result.get(timeout=120)
+                
+        except (KeyboardInterrupt, TimeoutError):  # Caught keyboard interrupt, terminating workers
             pool.terminate()
             pool.join()
-            sys.exit(-1)
-        print('worker ended')
+            return False
+        else:
+            pool.close()
+        pool.join()
+
+        return True
 
     def num_total_examples(self, zip_file, game_list, name_list):
         total_examples = 0
