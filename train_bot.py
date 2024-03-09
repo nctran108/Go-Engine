@@ -2,7 +2,7 @@ import h5py
 
 from keras.models import Sequential
 from keras.layers import Dense
-from go.agent.predict import DeepLearningAgent, load_prediction_agent
+from go.agents.predict import DeepLearningAgent, load_prediction_agent
 from go.data.parallel_processor import GoDataProcessor
 from go.encoders.sevenplane import SevenPlaneEncoder
 from networks import large
@@ -36,9 +36,9 @@ if __name__ == '__main__':
             verbose=1)
 
     deep_learning_bot = DeepLearningAgent(model, encoder)
-    h5file = h5py.File("./go/agent/deep_bot.h5", 'w')
+    h5file = h5py.File("./go/agents/deep_bot.h5", 'w')
     deep_learning_bot.serialize(h5file)
 
-    model_file = h5py.File("./go/agent/deep_bot.h5", 'r')
+    model_file = h5py.File("./go/agents/deep_bot.h5", 'r')
     bot_from_file = load_prediction_agent(model_file)
     

@@ -1,0 +1,90 @@
+Pachi is two things: a simple modular framework for robots playing
+the game of Go/Weiqi/Baduk, and a reasonably strong engine built
+within this framework.
+
+
+Engine
+------
+
+By default, Pachi currently uses the UCT engine that combines
+monte-carlo approach with tree search; UCB1AMAF tree policy using
+the RAVE method is used for tree search, while the Moggy playout
+policy using 3x3 patterns and various tactical checks is used for
+the random Monte-Carlo playouts.
+
+The default engine plays by Chinese rules and should be about
+2d KGS strength on 9x9. On 19x19, it might be about KGS 4k. Of couse,
+this assumes reasonable hardware, e.g. four-threaded Core2 machine.
+
+At the same time, various other approaches and tricks are being tried
+and minor improvements have been achieved; they are enabled when they
+give an universal playing strength boosts.
+
+
+Except UCT, Pachi supports a simple idiotbot-like engine and an example
+treeless MonteCarlo-player. The MonteCarlo simulation ("playout")
+policies are also pluggable, by default we use one that makes use of
+heavy domain knowledge.
+
+Two special engines are also provided for development support:
+* a simple "replay" engine that will simply play moves according
+  to the playout policy suggestions
+* a special "patternscan" engine that will respond to 'play' commands
+  by iteratively matching various pattern features on each move and
+  outputting them as response to the command; it is intended to be
+  used for pattern-learning from games in cooperation with an external
+  helper; no 'genmove' command support is provided
+
+
+Framework
+---------
+
+The aim of the framework is to make it easy to plug your engine
+to the common infrastructure and implement your ideas while
+minimalizing the overhead of implementing the GTP, speed-optimized
+board tools, etc.  Also, there are premade random playout and UCT
+tree engines, so that you can directly tweak only particular policies.
+The infrastructure is pretty fast and it should be quite easy
+to extend it to provide more facilities for your engine (but it should
+be at the same time kept as simple as possible).
+
+
+Licence
+-------
+
+Pachi is distributed under the GPLv2 licence (see the COPYING file for
+details and full text of the licence); you are welcome to tweak it as
+you wish (contributing back upstream is welcome) and distribute
+it freely, but only together with the source code. You are welcome
+to make private modifications to the code (e.g. try new algorithms and
+approaches), use them internally or even to have your bot play on the
+internet and enter competitions, but as soon as you want to release it
+to the public, you need to release the source code as well.
+
+One exception is the Autotest framework, which is licenced under the
+terms of the MIT licence (close to public domain) - you are free to
+use it any way you wish.
+
+
+To build Pachi, simply type:
+
+	make
+
+Built zzgo binary (named that way from historical reasons) in the current
+directory is a GTP client; use your favorite Go client to connect to it
+(generally it should be possible to use it in place of GNU Go; the
+command-line usage is however different), or use kgsGtp to connect to KGS;
+DO NOT make it accessible directly to enemy users since the parser is
+not secure - see the HACKING file for details.
+
+The zzgo binary can take many parameters, as well as the particular
+engine being used; the defaults should be fine for initial usage,
+you will have to consult the sources for fine-tuning the parameters.
+
+To build better optimized binary, type:
+
+	make zzgo-profiled
+
+This will also create binary zzgo, but while the build will take
+more time (probably less than a minute anyway), the resulting binary
+will be about 1/4 to 1/5 faster.
