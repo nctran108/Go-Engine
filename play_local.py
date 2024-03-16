@@ -2,8 +2,8 @@ import subprocess
 import re
 import h5py
 
-from go.agents.predict import load_prediction_agent
-from go.agents.termination import PassWhenOpponentPasses, TerminationAgent
+from go.agent.predict import load_prediction_agent
+from go.agent.termination import PassWhenOpponentPasses, TerminationAgent
 from go.goboard import GameState, Move
 
 from go.gotypes import Player
@@ -13,18 +13,18 @@ from go.utils import print_board
 from go.score import compute_game_result
 
 class LocalGtpBot:
-    def __init__(self, go_bot, termination=None, handicap=0, opponent='gnugo', output_sgf="out.sgf",out_color='b'):
+    def __init__(self, go_bot, termination=None, handicap=0, opponent='gnugo', output_sgf="out.sgf",our_color='b'):
         self.bot = TerminationAgent(go_bot,termination)
         self.handicap = handicap
         self._stopped = False
         self.game_state = GameState.new_game(19)
         self.sgf = SGFWriter(output_sgf)
-        self.out_color = Player.black if out_color == 'b' else Player.white
-        self.their_color = self.out_color.other
+        self.our_color = Player.black if our_color == 'b' else Player.white
+        self.their_color = self.our_color.other
 
         cmd = self.opponent_cmd(opponent)
         pipe = subprocess.PIPE
-        self.gtp_stream = subprocess.Popen(cmd, stdin=pipe, stdout=pipe)
+        self.gtp_stream = subprocess.Popen(cmd, stdin=pipe, stdout=pipe, bufsize=0)
 
     @staticmethod
     def opponent_cmd(opponent: str):
@@ -43,9 +43,9 @@ class LocalGtpBot:
         result = ''
         while not succeeded:
             line = self.gtp_stream.stdout.readline()
-            if line[0] == '=':
+            if line.decode()[0] == '=':
                 succeeded = True
-                line = line.strip()
+                line = line.decode().strip()
                 result = re.sub('^= ?', '', line)
         return result
     
@@ -55,6 +55,7 @@ class LocalGtpBot:
     
     def run(self):
         self.command_and_response("boardsize 19\n")
+        print('created board')
         self.set_handicap()
         self.play()
         self.sgf.write_sgf()
@@ -62,7 +63,7 @@ class LocalGtpBot:
     def set_handicap(self):
         if self.handicap == 0:
             self.command_and_response("komi 7.5\n")
-            self.sgf.append()("KM[7.5]\n")
+            self.sgf.append("KM[7.5]\n")
         else:
             stones = self.command_and_response("fixed_handicap{}\n".format(self.handicap))
             sgf_handicap = "HA[{}]AB".format(self.handicap)
@@ -74,7 +75,7 @@ class LocalGtpBot:
 
     def play(self):
         while not self._stopped:
-            if self.game_state.next_player == self.out_color:
+            if self.game_state.next_player == self.our_color:
                 self.play_our_move()
             else:
                 self.play_their_move()
@@ -83,7 +84,7 @@ class LocalGtpBot:
             print("Estimated result: ")
             print(compute_game_result(self.game_state))
 
-    def play_out_move(self):
+    def play_our_move(self):
         move = self.bot.select_move(self.game_state)
         self.game_state = self.game_state.apply_move(move)
 
@@ -98,9 +99,9 @@ class LocalGtpBot:
             pos = coords_to_gtp_position(move)
             self.command_and_response("play {} {}\n".format(our_name,pos))
             sgf_move = self.sgf.coordinates(move)
-        self.sgf.append(",{}[{}]\n".format(out_letter), sgf_move)
+        self.sgf.append(",{}[{}]\n".format(out_letter, sgf_move))
 
-    def play_their_movve(self):
+    def play_their_move(self):
         their_name = self.their_color.name
         their_letter = their_name[0].upper()
 
@@ -120,7 +121,7 @@ class LocalGtpBot:
 
 
 if __name__ == "__main__":
-    bot = load_prediction_agent(h5py.File("./go/agents/deep_bot.h5", 'r'))
+    bot = load_prediction_agent(h5py.File("./go/agent/deep_bot.h5", 'r'))
     gnu_go = LocalGtpBot(go_bot=bot, termination=PassWhenOpponentPasses(),
                          handicap=0, opponent='gnugo')
     gnu_go.run()

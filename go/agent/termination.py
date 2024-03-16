@@ -1,5 +1,5 @@
 from go import goboard
-from go.agents.base import Agent
+from go.agent.base import Agent
 from go import score
 
 class TerminationStrategy:

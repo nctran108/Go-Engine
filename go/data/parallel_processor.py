@@ -8,7 +8,7 @@ import gzip
 import shutil
 import numpy as np
 import multiprocessing
-from os import sys
+import time
 from keras.utils import to_categorical
 
 from go.gosgf import Sgf_game
@@ -18,7 +18,6 @@ from go.data.index_processor import KGSIndex
 from go.data.sampling import Sampler
 from go.data.generator import DataGenerator
 from go.encoders.base import get_encoder_by_name
-from go.utils import print_board
 
 def worker(jobinfo):   
     try:
@@ -26,6 +25,8 @@ def worker(jobinfo):
         clazz(encoder=encoder).process_zip(zip_file, data_file_name, game_list)
     except (KeyboardInterrupt, SystemExit):
         raise Exception('>>> Exiting child process.')
+    print('Finished works')
+    return True
 
 
 class GoDataProcessor:
@@ -123,10 +124,11 @@ class GoDataProcessor:
             np.save(feature_file, current_features)
             np.save(label_file, current_labels)
         print('[processor: ', current.ident, 'task done]', flush=True)
-        return True
+        time.sleep(1)
         
 
     def consolidate_games(self, name, samples):
+        print('Start consoldate games.....')
         files_needed = set(file_name for file_name, index in samples)
         file_names = []
         for zip_file_name in files_needed:
@@ -152,9 +154,10 @@ class GoDataProcessor:
 
         feature_file = self.data_dir + '/' + name
         label_file = self.data_dir + '/' + name
-
+        print('start saving.....')
         np.save(feature_file, features)
         np.save(label_file, labels)
+        print('data stored......')
 
         return features, labels
 
@@ -191,24 +194,28 @@ class GoDataProcessor:
                 zips_to_process.append((self.__class__, self.encoder_string, zip_name,
                                         data_file_name, indices_by_zip_name[zip_name]))
         cores = multiprocessing.cpu_count()  # Determine number of CPU cores and split work load among them
-        pool = multiprocessing.Pool(processes=cores)
+        pool = multiprocessing.Pool(processes=6)
 
-        try:
+        p = pool.map_async(worker, zips_to_process).get()
+        #try:
             #async_results = [pool.apply_async(worker, (zip_to_process,)) for zip_to_process in zips_to_process]
-            p = pool.map_async(worker, zips_to_process).wait()
+        #    p.get()
+        #    p.ready()
+        #    print('all job finished.......')
             # wait for asynchronous operation to finish
             #for async_result in async_results:
             #    async_result.get(timeout=120)
                 
-        except (KeyboardInterrupt, TimeoutError):  # Caught keyboard interrupt, terminating workers
-            pool.terminate()
-            pool.join()
-            return False
-        else:
-            pool.close()
-        pool.join()
+       # except (KeyboardInterrupt, TimeoutError, Exception):  # Caught keyboard interrupt, terminating workers
+        #    pool.terminate()
+        #    pool.join()
+        #    exit(-1)
 
-        return True
+
+        pool.close()
+        print('closed')
+        print('Joining.....')
+        pool.join()
 
     def num_total_examples(self, zip_file, game_list, name_list):
         total_examples = 0
