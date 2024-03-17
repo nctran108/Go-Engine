@@ -194,7 +194,7 @@ class GoDataProcessor:
                 zips_to_process.append((self.__class__, self.encoder_string, zip_name,
                                         data_file_name, indices_by_zip_name[zip_name]))
         cores = multiprocessing.cpu_count()  # Determine number of CPU cores and split work load among them
-        pool = multiprocessing.Pool(processes=6)
+        pool = multiprocessing.Pool(processes=cores)
 
         p = pool.map_async(worker, zips_to_process)
 

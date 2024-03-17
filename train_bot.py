@@ -14,8 +14,8 @@ if __name__ == '__main__':
     encoder = SevenPlaneEncoder((go_board_size,go_board_size))
     processor = GoDataProcessor(encoder=encoder.name())
 
-    generator = processor.load_go_data('train',num_samples=1000,use_generator=True)
-    generator_test = processor.load_go_data('test',num_samples=1000,use_generator=True)
+    generator = processor.load_go_data('train',num_samples=100,use_generator=True)
+    generator_test = processor.load_go_data('test',num_samples=100,use_generator=True)
     print("Got features and layers")
 
     input_shape = (encoder.num_planes, go_board_size, go_board_size)
