@@ -20,7 +20,6 @@ class Sampler:
         if data_type == 'test':
             return self.test_games
         elif data_type == 'train' and num_samples is not None:
-            print("[Sampler][num_samples is not None]")
             return self.draw_training_samples(num_samples)
         elif data_type == 'train' and num_samples is None:
             return self.draw_all_training()
