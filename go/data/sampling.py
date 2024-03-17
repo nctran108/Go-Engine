@@ -5,7 +5,7 @@ from six.moves import range
 
 class Sampler:
     """Sample training and test data from zipped sgf files such that test data is kept stable."""
-    def __init__(self, data_dir='data', num_test_games=100, cap_year=2015, seed=1337):
+    def __init__(self, data_dir='data/raw', num_test_games=100, cap_year=2015, seed=1337):
         self.data_dir = data_dir
         self.num_test_games = num_test_games
         self.test_games = []
@@ -20,6 +20,7 @@ class Sampler:
         if data_type == 'test':
             return self.test_games
         elif data_type == 'train' and num_samples is not None:
+            print("[Sampler][num_samples is not None]")
             return self.draw_training_samples(num_samples)
         elif data_type == 'train' and num_samples is None:
             return self.draw_all_training()

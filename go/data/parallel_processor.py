@@ -18,6 +18,7 @@ from go.data.index_processor import KGSIndex
 from go.data.sampling import Sampler
 from go.data.generator import DataGenerator
 from go.encoders.base import get_encoder_by_name
+from go.utils import print_board
 
 def worker(jobinfo):   
     try:
@@ -124,7 +125,6 @@ class GoDataProcessor:
             np.save(feature_file, current_features)
             np.save(label_file, current_labels)
         print('[processor: ', current.ident, 'task done]', flush=True)
-        time.sleep(1)
         
 
     def consolidate_games(self, name, samples):
@@ -196,26 +196,17 @@ class GoDataProcessor:
         cores = multiprocessing.cpu_count()  # Determine number of CPU cores and split work load among them
         pool = multiprocessing.Pool(processes=6)
 
-        p = pool.map_async(worker, zips_to_process).get()
-        #try:
+        p = pool.map_async(worker, zips_to_process)
+
+        try:
             #async_results = [pool.apply_async(worker, (zip_to_process,)) for zip_to_process in zips_to_process]
-        #    p.get()
-        #    p.ready()
-        #    print('all job finished.......')
-            # wait for asynchronous operation to finish
-            #for async_result in async_results:
-            #    async_result.get(timeout=120)
+            p.get()
                 
-       # except (KeyboardInterrupt, TimeoutError, Exception):  # Caught keyboard interrupt, terminating workers
-        #    pool.terminate()
-        #    pool.join()
-        #    exit(-1)
+        except (KeyboardInterrupt, TimeoutError, Exception):  # Caught keyboard interrupt, terminating workers
+            pool.terminate()
+            pool.join()
+            exit(-1)
 
-
-        pool.close()
-        print('closed')
-        print('Joining.....')
-        pool.join()
 
     def num_total_examples(self, zip_file, game_list, name_list):
         total_examples = 0

@@ -15,6 +15,7 @@ if __name__ == '__main__':
     processor = GoDataProcessor(encoder=encoder.name())
 
     generator = processor.load_go_data('train',num_samples=100,use_generator=True)
+    print(generator.get_num_samples())
     generator_test = processor.load_go_data('test',num_samples=100,use_generator=True)
     print("Got features and layers")
 
@@ -29,18 +30,18 @@ if __name__ == '__main__':
     model.summary()
 
     model.compile(loss='categorical_crossentropy',
-                optimizer='adadelta',
+                optimizer='sgd',
                 metrics=['accuracy'])
     
     epochs = 20
     batch_size = 128
 
     model.fit(generator.generate(batch_size,num_classes),
-              steps_per_epoch=generator.get_num_samples() / batch_size,
               epochs=epochs,
+              steps_per_epoch=generator.get_num_samples() / batch_size,
               validation_data=generator_test.generate(batch_size,num_classes),
               validation_steps=generator_test.get_num_samples() / batch_size,
-              callbacks=ModelCheckpoint('../checkpoints/large_model_epoch_{epoch}.h5')
+              callbacks=[ModelCheckpoint('../checkpoints/large_model_epoch_{epoch}.h5')]
               )
     """
     model.fit_generator(generator=generator.generate(batch_size,num_classes),
@@ -52,8 +53,8 @@ if __name__ == '__main__':
     """
     print("Finished fitting....")
             
-    model.evaluate_generator(generator=generator_test.generate(batch_size,num_classes),
-                             steps=generator_test.get_num_samples() / batch_size)
+    model.evaluate(generator_test.generate(batch_size,num_classes),
+                   steps=generator_test.get_num_samples() / batch_size)
 
     deep_learning_bot = DeepLearningAgent(model, encoder)
     h5file = h5py.File("./go/agent/deep_bot.h5", 'w')

@@ -10,6 +10,7 @@ class DataGenerator:
         self.num_samples = None
     
     def get_num_samples(self, batch_size=128, num_classes=19*19):
+        print(self.num_samples)
         if self.num_samples is None:
             self.num_samples = 0
             for X, Y in self._generate(batch_size=batch_size, num_classes=num_classes):
@@ -19,7 +20,7 @@ class DataGenerator:
     def _generate(self, batch_size, num_classes):
         for zip_file_name in self.files:
             file_name = zip_file_name.replace('.tar.gz', '') + 'train'
-            base = self.data_dir + '/processed/' + file_name + '_features_*.npy'
+            base = self.data_dir + '/' + file_name + '_features_*.npy'
             for feature_file in glob.glob(base):
                 label_file = feature_file.replace('features', 'labels')
                 x = np.load(feature_file)
