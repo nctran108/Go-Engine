@@ -1,5 +1,3 @@
-from __future__ import print_function
-from __future__ import absolute_import
 import os
 import glob
 import os.path
@@ -18,7 +16,6 @@ from go.data.index_processor import KGSIndex
 from go.data.sampling import Sampler
 from go.data.generator import DataGenerator
 from go.encoders.base import get_encoder_by_name
-from go.utils import print_board
 
 def worker(jobinfo):   
     try:
@@ -27,8 +24,7 @@ def worker(jobinfo):
     except (KeyboardInterrupt, SystemExit):
         raise Exception('>>> Exiting child process.')
     print('Finished works')
-    return True
-
+    return
 
 class GoDataProcessor:
     def __init__(self, encoder='simple', data_directory='data/raw'):
@@ -42,12 +38,12 @@ class GoDataProcessor:
         index = KGSIndex(data_directory=self.data_dir)
         index.download_files()
 
-        sampler = Sampler(data_dir=self.data_dir)
+        sampler = Sampler(data_dir=self.data_dir,index=index)
         data = sampler.draw_data(data_type, num_samples)
 
         self.map_to_workers(data_type, data)  # <1>
         if use_generator:
-            generator = DataGenerator(self.data_dir, data)
+            generator = DataGenerator(data_type,self.data_dir, data)
             return generator  # <2>
         else:
             features_and_labels = self.consolidate_games(data_type, data)
@@ -106,8 +102,6 @@ class GoDataProcessor:
                         labels[counter] = self.encoder.encode_point(point)
                         counter += 1
                     game_state = game_state.apply_move(move)
-                    #print('[processor: ',current.ident, ']', flush=True)
-                    #print_board(game_state.board)
                     first_move_done = True
 
         feature_file_base = self.data_dir + '/' + data_file_name + '_features_%d'
@@ -194,7 +188,7 @@ class GoDataProcessor:
                 zips_to_process.append((self.__class__, self.encoder_string, zip_name,
                                         data_file_name, indices_by_zip_name[zip_name]))
         cores = multiprocessing.cpu_count()  # Determine number of CPU cores and split work load among them
-        pool = multiprocessing.Pool(processes=cores)
+        pool = multiprocessing.Pool(processes=min(6,int(cores*0.8)))
 
         p = pool.map_async(worker, zips_to_process)
 

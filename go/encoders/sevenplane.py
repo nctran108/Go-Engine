@@ -21,8 +21,8 @@ class SevenPlaneEncoder(Encoder):
     
     def encode(self, game_state):
         board_tensor = np.zeros(self.shape())
-        base_plane = {Player.white: 0,
-                      Player.black: 3}
+        base_plane = {game_state.next_player: 0,
+                      game_state.next_player.other: 3}
         for row in range(self.board_height):
             for col in range(self.board_width):
                 p = Point(row=row + 1, col=col + 1)
