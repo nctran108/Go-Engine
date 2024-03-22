@@ -4,3 +4,4 @@ go/data/processed
 *.tar.gz
 *.tar
 *.h5
+checkpoints

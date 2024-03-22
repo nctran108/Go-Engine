@@ -6,7 +6,7 @@ import gzip
 import shutil
 import numpy as np
 import multiprocessing
-import time
+import sys
 from keras.utils import to_categorical
 
 from go.gosgf import Sgf_game
@@ -106,7 +106,6 @@ class GoDataProcessor:
 
         feature_file_base = self.data_dir + '/' + data_file_name + '_features_%d'
         label_file_base = self.data_dir + '/' + data_file_name + '_labels_%d'
-
         chunk = 0  # Due to files with large content, split up after chunksize
         chunksize = 1024
         print(feature_shape)

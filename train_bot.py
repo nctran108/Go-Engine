@@ -14,7 +14,7 @@ if __name__ == '__main__':
     encoder = SevenPlaneEncoder((go_board_size,go_board_size))
     processor = GoDataProcessor(encoder=encoder.name())
 
-    generator = processor.load_go_data(num_samples=15000,use_generator=True)
+    generator = processor.load_go_data(num_samples=100,use_generator=True)
     generator_test = processor.load_go_data('test',num_samples=100,use_generator=True)
     print("Got features and layers")
 
@@ -40,7 +40,7 @@ if __name__ == '__main__':
               steps_per_epoch=generator.get_num_samples(batch_size,num_classes) / batch_size,
               validation_data=generator_test.generate(batch_size,num_classes),
               validation_steps=generator_test.get_num_samples(batch_size,num_classes) / batch_size,
-              callbacks=[ModelCheckpoint('../checkpoints/large_model_epoch_{epoch}.keras')]
+              callbacks=[ModelCheckpoint('./checkpoints/large_model_epoch_{epoch}.keras')]
               )
             
     model.evaluate(generator_test.generate(batch_size,num_classes),
