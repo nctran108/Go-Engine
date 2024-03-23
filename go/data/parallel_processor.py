@@ -24,7 +24,6 @@ def worker(jobinfo):
         clazz(encoder=encoder).process_zip(i,zip_file, data_file_name, game_list)
     except (KeyboardInterrupt, SystemExit):
         raise Exception('>>> Exiting child process.')
-    print('Finished works')
     return
 
 class GoDataProcessor:
@@ -114,7 +113,6 @@ class GoDataProcessor:
         label_file_base = self.data_dir + '/' + data_file_name + '_labels_%d'
         chunk = 0  # Due to files with large content, split up after chunksize
         chunksize = 1024
-        print(feature_shape)
         while features.shape[0] >= chunksize:
             feature_file = feature_file_base % chunk
             label_file = label_file_base % chunk
@@ -123,7 +121,6 @@ class GoDataProcessor:
             current_labels, labels = labels[:chunksize], labels[chunksize:]
             np.save(feature_file, current_features)
             np.save(label_file, current_labels)
-        print('[processor: ', pid, 'task done]', flush=True)
         
 
     def consolidate_games(self, name, samples):
@@ -176,7 +173,6 @@ class GoDataProcessor:
         return game_state, first_move_done
 
     def map_to_workers(self, data_type, samples):
-        print('Start workers')
         zip_names = set()
         indices_by_zip_name = {}
         for filename, index in samples:
