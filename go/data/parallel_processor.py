@@ -5,9 +5,10 @@ import tarfile
 import gzip
 import shutil
 import numpy as np
-import multiprocessing
+from multiprocessing import Pool, RLock, current_process
 import sys
 from keras.utils import to_categorical
+from tqdm import tqdm
 
 from go.gosgf import Sgf_game
 from go.goboard import Board, GameState, Move
@@ -19,8 +20,8 @@ from go.encoders.base import get_encoder_by_name
 
 def worker(jobinfo):   
     try:
-        clazz, encoder, zip_file, data_file_name, game_list = jobinfo
-        clazz(encoder=encoder).process_zip(zip_file, data_file_name, game_list)
+        i, clazz, encoder, zip_file, data_file_name, game_list = jobinfo
+        clazz(encoder=encoder).process_zip(i,zip_file, data_file_name, game_list)
     except (KeyboardInterrupt, SystemExit):
         raise Exception('>>> Exiting child process.')
     print('Finished works')
@@ -64,8 +65,9 @@ class GoDataProcessor:
         this_tar.close()
         return tar_file
 
-    def process_zip(self, zip_file_name, data_file_name, game_list):
-        current = multiprocessing.current_process()
+    def process_zip(self, i, zip_file_name, data_file_name, game_list):
+        pid = current_process().ident
+        tqdm_text = "[pid " + "{}".format(pid).zfill(3) + ']'
 
         tar_file = self.unzip_data(zip_file_name)
         zip_file = tarfile.open(self.data_dir + '/' + tar_file)
@@ -78,31 +80,35 @@ class GoDataProcessor:
         labels = np.zeros((total_examples,))
 
         counter = 0
-        for index in game_list:
-            name = name_list[index + 1]
-            if not name.endswith('.sgf'):
-                raise ValueError(name + ' is not a valid sgf')
-            sgf_content = zip_file.extractfile(name).read()
-            sgf = Sgf_game.from_string(sgf_content.decode('utf-8'))
+        with tqdm(range(total_examples), desc=tqdm_text, position=i) as pbar:
+            for index in game_list:
+                name = name_list[index + 1]
+                if not name.endswith('.sgf'):
+                    raise ValueError(name + ' is not a valid sgf')
+                sgf_content = zip_file.extractfile(name).read()
+                sgf = Sgf_game.from_string(sgf_content.decode('utf-8'))
 
-            game_state, first_move_done = self.get_handicap(sgf)
+                game_state, first_move_done = self.get_handicap(sgf)
 
-            for item in sgf.main_sequence_iter():
-                color, move_tuple = item.get_move()
-                point = None
-                if color is not None:
-                    if move_tuple is not None:
-                        row, col = move_tuple
-                        point = Point(row + 1, col + 1)
-                        move = Move.play(point)
-                    else:
-                        move = Move.pass_turn()
-                    if first_move_done and point is not None:
-                        features[counter] = self.encoder.encode(game_state)
-                        labels[counter] = self.encoder.encode_point(point)
-                        counter += 1
-                    game_state = game_state.apply_move(move)
-                    first_move_done = True
+                for item in sgf.main_sequence_iter():
+                    color, move_tuple = item.get_move()
+                    point = None
+                    if color is not None:
+                        if move_tuple is not None:
+                            row, col = move_tuple
+                            point = Point(row + 1, col + 1)
+                            move = Move.play(point)
+                        else:
+                            move = Move.pass_turn()
+                        if first_move_done and point is not None:
+                            features[counter] = self.encoder.encode(game_state)
+                            labels[counter] = self.encoder.encode_point(point)
+                            counter += 1
+                            pbar.update(1) ## update bar
+                        game_state = game_state.apply_move(move)
+                        first_move_done = True
+                    #print(counter,end='\r')
+            pbar.close()
 
         feature_file_base = self.data_dir + '/' + data_file_name + '_features_%d'
         label_file_base = self.data_dir + '/' + data_file_name + '_labels_%d'
@@ -117,7 +123,7 @@ class GoDataProcessor:
             current_labels, labels = labels[:chunksize], labels[chunksize:]
             np.save(feature_file, current_features)
             np.save(label_file, current_labels)
-        print('[processor: ', current.ident, 'task done]', flush=True)
+        print('[processor: ', pid, 'task done]', flush=True)
         
 
     def consolidate_games(self, name, samples):
@@ -180,24 +186,29 @@ class GoDataProcessor:
             indices_by_zip_name[filename].append(index)
 
         zips_to_process = []
-        for zip_name in zip_names:
+        for i, zip_name in enumerate(zip_names):
             base_name = zip_name.replace('.tar.gz', '')
             data_file_name = base_name + data_type
             if not os.path.isfile(self.data_dir + '/' + data_file_name):
-                zips_to_process.append((self.__class__, self.encoder_string, zip_name,
+                zips_to_process.append((i,self.__class__, self.encoder_string, zip_name,
                                         data_file_name, indices_by_zip_name[zip_name]))
-        cores = multiprocessing.cpu_count()  # Determine number of CPU cores and split work load among them
-        pool = multiprocessing.Pool(processes=min(6,int(cores*0.8)))
+        #cores = multiprocessing.cpu_count()  # Determine number of CPU cores and split work load among them
+        pool = Pool(10, initargs=(RLock(),),initializer=tqdm.set_lock)
 
         p = pool.map_async(worker, zips_to_process)
 
         try:
             #async_results = [pool.apply_async(worker, (zip_to_process,)) for zip_to_process in zips_to_process]
+            pool.close()
             p.get()
+
+            # Important to print these blanks
+            print("\n" * (len(zips_to_process) + 1))
                 
-        except (KeyboardInterrupt, TimeoutError, Exception):  # Caught keyboard interrupt, terminating workers
+        except (KeyboardInterrupt, TimeoutError, Exception) as e:  # Caught keyboard interrupt, terminating workers
             pool.terminate()
             pool.join()
+            print(e)
             exit(-1)
 
 
