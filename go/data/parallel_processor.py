@@ -5,7 +5,7 @@ import tarfile
 import gzip
 import shutil
 import numpy as np
-from multiprocessing import Pool, RLock, current_process
+from multiprocessing import Pool, RLock, current_process, freeze_support
 import sys
 from keras.utils import to_categorical
 from tqdm import tqdm
@@ -22,9 +22,9 @@ def worker(jobinfo):
     try:
         i, clazz, encoder, zip_file, data_file_name, game_list = jobinfo
         clazz(encoder=encoder).process_zip(i,zip_file, data_file_name, game_list)
-    except (KeyboardInterrupt, SystemExit):
+    except (KeyboardInterrupt, SystemExit, AssertionError) as e:
+        print(e, 'from worker')
         raise Exception('>>> Exiting child process.')
-    return
 
 class GoDataProcessor:
     def __init__(self, encoder='simple', data_directory='data/raw'):
@@ -79,7 +79,7 @@ class GoDataProcessor:
         labels = np.zeros((total_examples,))
 
         counter = 0
-        with tqdm(range(total_examples), desc=tqdm_text, position=i) as pbar:
+        with tqdm(range(total_examples), desc=tqdm_text, position=i,leave=False) as process:
             for index in game_list:
                 name = name_list[index + 1]
                 if not name.endswith('.sgf'):
@@ -103,11 +103,13 @@ class GoDataProcessor:
                             features[counter] = self.encoder.encode(game_state)
                             labels[counter] = self.encoder.encode_point(point)
                             counter += 1
-                            pbar.update(1) ## update bar
+                            process.update(1) ## update bar
+                            #process.refresh()
                         game_state = game_state.apply_move(move)
                         first_move_done = True
                     #print(counter,end='\r')
-            pbar.close()
+            #process.clear()
+            #process.close()
 
         feature_file_base = self.data_dir + '/' + data_file_name + '_features_%d'
         label_file_base = self.data_dir + '/' + data_file_name + '_labels_%d'
@@ -173,6 +175,7 @@ class GoDataProcessor:
         return game_state, first_move_done
 
     def map_to_workers(self, data_type, samples):
+        freeze_support() # support window
         zip_names = set()
         indices_by_zip_name = {}
         for filename, index in samples:
@@ -186,20 +189,19 @@ class GoDataProcessor:
             base_name = zip_name.replace('.tar.gz', '')
             data_file_name = base_name + data_type
             if not os.path.isfile(self.data_dir + '/' + data_file_name):
-                zips_to_process.append((i,self.__class__, self.encoder_string, zip_name,
+                zips_to_process.append(((i%6),self.__class__, self.encoder_string, zip_name,
                                         data_file_name, indices_by_zip_name[zip_name]))
         #cores = multiprocessing.cpu_count()  # Determine number of CPU cores and split work load among them
-        pool = Pool(10, initargs=(RLock(),),initializer=tqdm.set_lock)
+        pool = Pool(6, initargs=(RLock(),),initializer=tqdm.set_lock)
 
         p = pool.map_async(worker, zips_to_process)
 
         try:
             #async_results = [pool.apply_async(worker, (zip_to_process,)) for zip_to_process in zips_to_process]
-            pool.close()
             p.get()
 
             # Important to print these blanks
-            print("\n" * (len(zips_to_process) + 1))
+            print("\n" * (6 + 1))
                 
         except (KeyboardInterrupt, TimeoutError, Exception) as e:  # Caught keyboard interrupt, terminating workers
             pool.terminate()

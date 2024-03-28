@@ -32,6 +32,10 @@ def layers(input_shape):
         Activation('relu'),
 
         Flatten(),
+        Dense(512),
+        Activation('relu'),
         Dense(1024),
+        Activation('relu'),
+        Dense(512),
         Activation('relu')
     ]

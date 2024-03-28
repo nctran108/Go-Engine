@@ -2,7 +2,7 @@ import h5py
 
 from keras.models import Sequential
 from keras.layers import Dense
-from go.agent.predict import DeepLearningAgent, load_prediction_agent
+from go.agent.predict import DeepLearningAgent
 from go.data.parallel_processor import GoDataProcessor
 from go.encoders.sevenplane import SevenPlaneEncoder
 from networks import large
@@ -14,8 +14,8 @@ if __name__ == '__main__':
     encoder = SevenPlaneEncoder((go_board_size,go_board_size))
     processor = GoDataProcessor(encoder=encoder.name())
 
-    generator = processor.load_go_data(num_samples=100,use_generator=True)
-    generator_test = processor.load_go_data('test',num_samples=100,use_generator=True)
+    x,y = processor.load_go_data(num_samples=10000)
+    x_test, y_test = processor.load_go_data('test',num_samples=1000)
     print("Got features and layers")
 
     input_shape = (encoder.num_planes, go_board_size, go_board_size)
@@ -29,27 +29,27 @@ if __name__ == '__main__':
     model.summary()
 
     model.compile(loss='categorical_crossentropy',
-                  optimizer='adadelta',
+                  optimizer='sgd',
                   metrics=['accuracy'])
     
-    epochs = 20
+    epochs = 100
     batch_size = 128
 
-    model.fit(generator.generate(batch_size,num_classes),
+    model.fit(x,y, batch_size=batch_size,
               epochs=epochs,
-              steps_per_epoch=generator.get_num_samples(batch_size,num_classes) / batch_size,
-              validation_data=generator_test.generate(batch_size,num_classes),
-              validation_steps=generator_test.get_num_samples(batch_size,num_classes) / batch_size,
+              verbose=1,
+              validation_data=(x_test,y_test),
               callbacks=[ModelCheckpoint('./checkpoints/large_model_epoch_{epoch}.keras')]
               )
             
-    model.evaluate(generator_test.generate(batch_size,num_classes),
-                   steps=generator_test.get_num_samples(batch_size,num_classes) / batch_size)
+    score = model.evaluate(x_test,y_test,
+                   verbose=0)
+    
+    print('Test loss:', score[0])
+    print('Test accuracy:', score[1])
 
     deep_learning_bot = DeepLearningAgent(model, encoder)
     h5file = h5py.File("./go/agent/deep_bot.h5", 'w')
-    deep_learning_bot.serialize( h5file)
+    deep_learning_bot.serialize(h5file)
 
-    #model_file = h5py.File("./go/agent/deep_bot.h5", 'r')
-    #bot_from_file = load_prediction_agent(model_file)
     
