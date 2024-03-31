@@ -1,5 +1,5 @@
-from keras.layers import Dense, Activation, Flatten
-from keras.layers import Conv2D, ZeroPadding2D
+from keras.layers import Dense, Activation, Flatten, Dropout
+from keras.layers import Conv2D, ZeroPadding2D, MaxPooling2D
 
 def layers(input_shape):
     return [
@@ -15,6 +15,8 @@ def layers(input_shape):
         Conv2D(64,kernel_size=(5,5), data_format='channels_first'),
         Activation('relu'),
 
+        Dropout(rate=0.5),
+
         ZeroPadding2D((2,2), data_format='channels_first'),
         Conv2D(48,kernel_size=(5,5), data_format='channels_first'),
         Activation('relu'),
@@ -22,6 +24,7 @@ def layers(input_shape):
         ZeroPadding2D((2,2), data_format='channels_first'),
         Conv2D(48,kernel_size=(5,5), data_format='channels_first'),
         Activation('relu'),
+
 
         ZeroPadding2D((2,2), data_format='channels_first'),
         Conv2D(32,kernel_size=(5,5), data_format='channels_first'),
@@ -32,10 +35,10 @@ def layers(input_shape):
         Activation('relu'),
 
         Flatten(),
-        Dense(512),
+        Dense(512), 
         Activation('relu'),
-        Dense(1024),
+        Dense(1024), 
         Activation('relu'),
-        Dense(512),
-        Activation('relu')
+        Dense(512), 
+        Activation('relu'),
     ]

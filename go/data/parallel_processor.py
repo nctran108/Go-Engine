@@ -150,8 +150,8 @@ class GoDataProcessor:
         features = np.concatenate(feature_list, axis=0)
         labels = np.concatenate(label_list, axis=0)
 
-        feature_file = self.data_dir + '/' + name
-        label_file = self.data_dir + '/' + name
+        feature_file = self.data_dir + '/features_' + name
+        label_file = self.data_dir + '/labels_' + name
         print('start saving.....')
         np.save(feature_file, features)
         np.save(label_file, labels)
@@ -230,3 +230,29 @@ class GoDataProcessor:
             else:
                 raise ValueError(name + ' is not a valid sgf')
         return total_examples
+    
+    def load_data_from_npy(self, data_type):
+        print('loading npy data....')
+        feature_list = []
+        label_list = []
+        base =  self.data_dir + '/' + '*' + '_features_*.npy'
+        for feature_file in tqdm(glob.glob(base)):
+                label_file = feature_file.replace('features', 'labels')
+                x = np.load(feature_file)
+                y = np.load(label_file)
+                x = x.astype('float32')
+                y = to_categorical(y.astype(int), 19 * 19)
+                feature_list.append(x)
+                label_list.append(y)
+
+        features = np.concatenate(feature_list, axis=0)
+        labels = np.concatenate(label_list, axis=0)
+
+        feature_file = self.data_dir + '/features_' + data_type
+        label_file = self.data_dir + '/labels_' + data_type
+        print('start saving.....')
+        np.save(feature_file, features)
+        np.save(label_file, labels)
+        print('data stored......')
+
+        return features, labels

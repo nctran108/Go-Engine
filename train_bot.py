@@ -1,30 +1,36 @@
 import h5py
 
 from keras.models import Sequential
-from keras.layers import Dense
+from keras.layers import Dense, Dropout
 from go.agent.predict import DeepLearningAgent
 from go.data.parallel_processor import GoDataProcessor
 from go.encoders.sevenplane import SevenPlaneEncoder
 from networks import large
 from keras.callbacks import ModelCheckpoint
+import numpy as np
 
 if __name__ == '__main__':
-    go_board_size = 19
-    num_classes = go_board_size * go_board_size
-    encoder = SevenPlaneEncoder((go_board_size,go_board_size))
+    board_size = 19
+    num_classes = board_size * board_size
+    encoder = SevenPlaneEncoder((board_size,board_size))
     processor = GoDataProcessor(encoder=encoder.name())
 
-    x,y = processor.load_go_data(num_samples=10000)
-    x_test, y_test = processor.load_go_data('test',num_samples=1000)
-    print("Got features and layers")
+    features = np.load('go/data/raw/features_train.npy')
+    labels = np.load('go/data/raw/labels_train.npy')
 
-    input_shape = (encoder.num_planes, go_board_size, go_board_size)
+    random_indices = np.random.randint(0, 5000, size=1000)
+
+    x, x_test = features[:5000], features[random_indices]
+    y , y_test = labels[:5000], labels[random_indices]
+
+    input_shape = (encoder.num_planes, board_size, board_size)
     
     network_layers = large.layers(input_shape=input_shape)
     model = Sequential()
 
     for layer in network_layers:
         model.add(layer)
+    model.add(Dropout(rate=0.5))
     model.add(Dense(num_classes, activation='softmax'))
     model.summary()
 
@@ -32,8 +38,8 @@ if __name__ == '__main__':
                   optimizer='sgd',
                   metrics=['accuracy'])
     
-    epochs = 100
-    batch_size = 128
+    epochs = 300
+    batch_size = 16
 
     model.fit(x,y, batch_size=batch_size,
               epochs=epochs,
