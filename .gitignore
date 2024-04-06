@@ -5,3 +5,4 @@ go/data/processed
 *.tar
 *.h5
 checkpoints
+go/__pycache__/

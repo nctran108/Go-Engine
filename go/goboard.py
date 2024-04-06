@@ -2,9 +2,14 @@ import copy
 from go.gotypes import Player, Point
 from go import zobrist
 from go.score import compute_game_result
+from typing import List
+from go.utils import MoveAge
+
+class IllegalMoveError(Exception):
+    pass
 
 class Move():
-    def __init__(self, point=None, is_pass= False, is_resign=False) -> None:
+    def __init__(self, point: Point=None, is_pass= False, is_resign=False) -> None:
         assert(point is not None) ^ is_pass ^ is_resign
 
         self.point = point
@@ -25,7 +30,7 @@ class Move():
         return Move(is_resign=True)
     
 class GoString():
-    def __init__(self, color, stones, liberties):
+    def __init__(self, color: Player, stones: List[Point], liberties):
         self.color = color
         self.stones = frozenset(stones)
         self.liberties = frozenset(liberties)
@@ -68,16 +73,18 @@ class Board():
         self.num_cols = num_cols
         self._grid = {}
         self._hash = zobrist.EMPTY_BOARD
+        self.move_ages = MoveAge(self)
 
     def place_stone(self, player, point : Point):
         assert self.is_on_grid(point)
         if self._grid.get(point) is not None: # already play
-            #print("Illigal play on %s" % str(point))
-            return
+            print("Illigal play on %s" % str(point))
         assert self._grid.get(point) is None, " point is not valid"
         adjacent_same_color = []
         adjacent_opposite_color = []
         liberties = []
+        self.move_ages.increment_all()
+        self.move_ages.add(point)
         for neighbor in point.neighbors():
             if not self.is_on_grid(neighbor):
                 continue
@@ -92,11 +99,15 @@ class Board():
                     adjacent_opposite_color.append(neighbor_string)
         new_string = GoString(player, [point], liberties)
 
+        # 1. Merge any adjacent strings of the same color.
         for same_color_string in adjacent_same_color:
             new_string =  new_string.merged_with(same_color_string)
         for new_string_point in new_string.stones:
             self._grid[new_string_point] = new_string
-        
+
+        # Remove empty-point hash code.
+        self._hash ^= zobrist.HASH_CODE[point, None]
+        # Add filled point hash code.
         self._hash ^= zobrist.HASH_CODE[point, player]
 
         for other_color_string in adjacent_opposite_color:
@@ -112,26 +123,30 @@ class Board():
     
     def _remove_string(self, string: GoString):
         for point in string.stones:
+            self.move_ages.reset_age(point)
             for neighbor in point.neighbors():
                 neighbor_string = self._grid.get(neighbor)
                 if neighbor_string is None:
                     continue
                 if neighbor_string is not string:
                     self._replace_string(neighbor_string.with_liberty(point))
-                self._grid[point] = None
+            self._grid[point] = None
+            # Remove filled point hash code.
+            self._hash ^= zobrist.HASH_CODE[point, string.color]
 
-                self._hash ^= zobrist.HASH_CODE[point, string.color]
+            # Add empty point hash code.
+            self._hash ^= zobrist.HASH_CODE[point, None]
 
     def is_on_grid(self, point: Point):
         return 1 <= point.row <= self.num_rows and 1 <= point.col <= self.num_cols
     
-    def get(self, point: Point):
+    def get(self, point: Point) -> Player:
         string = self._grid.get(point)
         if string is None:
             return None
         return string.color
     
-    def get_go_string(self, point : Point):
+    def get_go_string(self, point : Point) -> GoString:
         string = self._grid.get(point)
         if string is None:
             return None
@@ -229,3 +244,6 @@ class GameState():
             return self.next_player
         game_result = compute_game_result(self)
         return game_result.winner
+    
+    def color(self, point: Point) -> Player:
+        return self.board.get(point)

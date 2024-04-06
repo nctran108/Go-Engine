@@ -1,5 +1,6 @@
 import enum
 from collections import namedtuple
+from typing import List
 
 class Player(enum.Enum):
     """enum player color"""
@@ -13,7 +14,7 @@ class Player(enum.Enum):
     
 class Point(namedtuple('Point', 'row col')):
     """this class is an immutable and tuple-like data structure that preresentation the intersect/point on the board game with row and col"""
-    def neighbors(self) -> "Point":
+    def neighbors(self) -> List["Point"]:
         return [
             Point(self.row - 1, self.col),
             Point(self.row + 1, self.col),
