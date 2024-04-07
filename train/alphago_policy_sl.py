@@ -12,7 +12,7 @@ import h5py
 
 rows, cols = 19, 19
 num_classes = rows * cols
-num_games = 10000
+num_games = 100
 
 encoder = AlphaGoEncoder((rows,cols))
 processor = GoDataProcessor(encoder=encoder.name())
