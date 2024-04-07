@@ -17,13 +17,14 @@ from go.data.index_processor import KGSIndex
 from go.data.sampling import Sampler
 from go.data.generator import DataGenerator
 from go.encoders.base import get_encoder_by_name
+from go.utils import print_board
 
 def worker(jobinfo):   
     try:
         i, clazz, encoder, zip_file, data_file_name, game_list = jobinfo
         clazz(encoder=encoder).process_zip(i,zip_file, data_file_name, game_list)
-    except (KeyboardInterrupt, SystemExit, AssertionError, KeyError) as e:
-        print(e)
+    except (KeyboardInterrupt, SystemExit) as e:
+        print("From Worker: ",e)
         raise Exception('>>> Exiting child process.')
 
 class GoDataProcessor:
@@ -87,12 +88,13 @@ class GoDataProcessor:
                     raise ValueError(name + ' is not a valid sgf')
                 sgf_content = zip_file.extractfile(name).read()
                 sgf = Sgf_game.from_string(sgf_content.decode('utf-8'))
-
+                
                 game_state, first_move_done = self.get_handicap(sgf)
 
                 for item in sgf.main_sequence_iter():
                     color, move_tuple = item.get_move()
                     point = None
+                    move = None
                     if color is not None:
                         if move_tuple is not None:
                             row, col = move_tuple
@@ -168,11 +170,12 @@ class GoDataProcessor:
         game_state = GameState.new_game(19)
         if sgf.get_handicap() is not None and sgf.get_handicap() != 0:
             for setup in sgf.get_root().get_setup_stones():
-                for move in setup:
-                    row, col = move
+                for coord in setup:
+                    row, col = coord
                     go_board.place_stone(Player.black, Point(row + 1, col + 1))  # black gets handicap
+                    move = Move(Point(row + 1, col + 1))
             first_move_done = True
-            game_state = GameState(go_board, Player.white, None, move)
+            game_state = GameState(go_board, Player.white, game_state, move)
         return game_state, first_move_done
 
     def map_to_workers(self, data_type, samples):
@@ -185,17 +188,17 @@ class GoDataProcessor:
                 indices_by_zip_name[filename] = []
             indices_by_zip_name[filename].append(index)
 
+        cores = 8  # Determine number of CPU cores and split work load among them
         zips_to_process = []
         for i, zip_name in enumerate(zip_names):
             base_name = zip_name.replace('.tar.gz', '')
             data_file_name = base_name + data_type
             if not os.path.isfile(self.data_dir + '/' + data_file_name):
-                zips_to_process.append(((i%6),self.__class__, self.encoder_string, zip_name,
+                zips_to_process.append(((i%cores),self.__class__, self.encoder_string, zip_name,
                                         data_file_name, indices_by_zip_name[zip_name]))
-        #cores = multiprocessing.cpu_count()  # Determine number of CPU cores and split work load among them
-        pool = Pool(6, initargs=(RLock(),),initializer=tqdm.set_lock)
+        
+        pool = Pool(cores, initargs=(RLock(),),initializer=tqdm.set_lock)
 
-        print('Start multi map.....')
         p = pool.map_async(worker, zips_to_process)
 
         try:
@@ -203,11 +206,12 @@ class GoDataProcessor:
             p.get()
 
             # Important to print these blanks
-            print("\n" * (6 + 1))
+            print("\n" * (cores + 1))
                 
         except (KeyboardInterrupt, TimeoutError, Exception) as e:  # Caught keyboard interrupt, terminating workers
             pool.terminate()
             pool.join()
+            print("Error")
             print(type(e))
             print(e)
             exit(-1)

@@ -76,7 +76,7 @@ class Board():
         self.move_ages = MoveAge(self)
 
     def place_stone(self, player, point : Point):
-        assert self.is_on_grid(point)
+        assert self.is_on_grid(point), str(point)
         if self._grid.get(point) is not None: # already play
             print("Illigal play on %s" % str(point))
         assert self._grid.get(point) is None, " point is not valid"

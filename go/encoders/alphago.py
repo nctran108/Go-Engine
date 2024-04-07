@@ -4,7 +4,6 @@ from go.gotypes import Point, Player
 from go.goboard import Move, GameState
 from go.agent.helpers import is_point_an_eye
 import numpy as np
-from tqdm import tqdm
 
 """
 Feature name            num of planes   Description
@@ -48,10 +47,9 @@ class AlphaGoEncoder(Encoder):
     def name(self):
         return 'alphago'
     
-    def enncode(self, game_state : GameState):
-        print("Encoding.......")
+    def encode(self, game_state : GameState):
         board_tensor = np.zeros((self.num_planes, self.board_height, self.board_width))
-        for r in tqdm(range(self.board_height)):
+        for r in range(self.board_height):
             for c in range(self.board_width):
                 point = Point(row=r + 1, col= c + 1)
 
@@ -71,7 +69,7 @@ class AlphaGoEncoder(Encoder):
                 
                 ages = min(game_state.board.move_ages.get(r, c), 8)
                 if ages > 0:
-                    board_tensor[offset("turns_since") + ages][r][c] = 1
+                    board_tensor[offset("turns_since") + int(ages)][r][c] = 1
                 
                 if game_state.board.get_go_string(point):
                     liberties = min(game_state.board.get_go_string(point).num_liberties, 8)
@@ -87,7 +85,7 @@ class AlphaGoEncoder(Encoder):
                     capture_count = 0
                     for go_string in adjacent_strings:
                         other_player = game_state.next_player.other
-                        if go_string and go_string.num_liberties() == 1 and go_string.color == other_player:
+                        if go_string and go_string.num_liberties == 1 and go_string.color == other_player:
                             capture_count += len(go_string.stones)
                     capture_count = min(capture_count, 8)
                     board_tensor[offset("capture_size")  + capture_count][r][c] = 1
@@ -97,7 +95,7 @@ class AlphaGoEncoder(Encoder):
                     if go_string:
                         num_atari_stones = min(len(go_string.stones), 8)
                         board_tensor[offset("self_atari_size")  + num_atari_stones][r][c] = 1
-                
+
                 if is_ladder_capture(game_state, point):
                     board_tensor[offset("ladder_capture")][r][c] = 1
                 
@@ -136,4 +134,4 @@ class AlphaGoEncoder(Encoder):
         return self.num_planes, self.board_height, self.board_width
 
 def create(board_size):
-    return AlphaGoEncoder(board_size)
+    return AlphaGoEncoder(board_size, use_player_plane=False)
