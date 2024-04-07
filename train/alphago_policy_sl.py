@@ -1,6 +1,6 @@
 import sys
-sys.path.append('d:\\study\\Go-Engine')
-sys.path.append('d:\study\Go-Engine\go')
+import os
+sys.path.append(os.getcwd())
 
 from go.data.parallel_processor import GoDataProcessor
 from go.encoders.alphago import AlphaGoEncoder
@@ -14,7 +14,7 @@ rows, cols = 19, 19
 num_classes = rows * cols
 num_games = 10000
 
-encoder = AlphaGoEncoder()
+encoder = AlphaGoEncoder((rows,cols))
 processor = GoDataProcessor(encoder=encoder.name())
 generator = processor.load_go_data('train', num_games, use_generator=True)
 test_generator = processor.load_go_data('test', num_games, use_generator=True)

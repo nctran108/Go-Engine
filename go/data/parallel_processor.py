@@ -22,8 +22,8 @@ def worker(jobinfo):
     try:
         i, clazz, encoder, zip_file, data_file_name, game_list = jobinfo
         clazz(encoder=encoder).process_zip(i,zip_file, data_file_name, game_list)
-    except (KeyboardInterrupt, SystemExit, AssertionError) as e:
-        print(e, 'from worker')
+    except (KeyboardInterrupt, SystemExit, AssertionError, KeyError) as e:
+        print(e)
         raise Exception('>>> Exiting child process.')
 
 class GoDataProcessor:
@@ -38,8 +38,10 @@ class GoDataProcessor:
         index = KGSIndex(data_directory=self.data_dir)
         index.download_files()
 
+        print("start sampler.....")
         sampler = Sampler(data_dir=self.data_dir,index=index)
         data = sampler.draw_data(data_type, num_samples)
+        print("data drawed....")
 
         self.map_to_workers(data_type, data)  # <1>
         if use_generator:
@@ -72,7 +74,6 @@ class GoDataProcessor:
         zip_file = tarfile.open(self.data_dir + '/' + tar_file)
         name_list = zip_file.getnames()
         total_examples = self.num_total_examples(zip_file, game_list, name_list)
-
         shape = self.encoder.shape()
         feature_shape = np.insert(shape, 0, np.asarray([total_examples]))
         features = np.zeros(feature_shape)
@@ -175,7 +176,7 @@ class GoDataProcessor:
         return game_state, first_move_done
 
     def map_to_workers(self, data_type, samples):
-        freeze_support() # support window
+        #freeze_support() # support window
         zip_names = set()
         indices_by_zip_name = {}
         for filename, index in samples:
@@ -194,6 +195,7 @@ class GoDataProcessor:
         #cores = multiprocessing.cpu_count()  # Determine number of CPU cores and split work load among them
         pool = Pool(6, initargs=(RLock(),),initializer=tqdm.set_lock)
 
+        print('Start multi map.....')
         p = pool.map_async(worker, zips_to_process)
 
         try:
@@ -206,6 +208,7 @@ class GoDataProcessor:
         except (KeyboardInterrupt, TimeoutError, Exception) as e:  # Caught keyboard interrupt, terminating workers
             pool.terminate()
             pool.join()
+            print(type(e))
             print(e)
             exit(-1)
 
@@ -218,7 +221,7 @@ class GoDataProcessor:
                 sgf_content = zip_file.extractfile(name).read()
                 sgf = Sgf_game.from_string(sgf_content.decode())
                 game_state, first_move_done = self.get_handicap(sgf)
-
+                
                 num_moves = 0
                 for item in sgf.main_sequence_iter():
                     color, move = item.get_move()

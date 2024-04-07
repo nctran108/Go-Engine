@@ -131,6 +131,7 @@ class Board():
                 if neighbor_string is not string:
                     self._replace_string(neighbor_string.with_liberty(point))
             self._grid[point] = None
+
             # Remove filled point hash code.
             self._hash ^= zobrist.HASH_CODE[point, string.color]
 
