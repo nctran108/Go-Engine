@@ -74,12 +74,13 @@ def guess_ladder_stones(game_state: GameState, point: Point, escape_player):
 
 def detemine_escape_candidates(game_state: GameState, point: Point, capture_player):
     escape_candidates = [nb for nb in point.neighbors() if game_state.board.is_on_grid(nb)]
-    for other_ladder_stone in game_state.board.get_go_string(point).stones:
-        for neighbor in other_ladder_stone.neighbors():
-            right_color = game_state.board.get(neighbor) == capture_player
-            one_liberty = count_liberties(game_state, neighbor) == 1
-            if right_color and one_liberty:
-                escape_candidates += liberties(game_state, neighbor)
+    if game_state.board.get_go_string(point):
+        for other_ladder_stone in game_state.board.get_go_string(point).stones:
+            for neighbor in other_ladder_stone.neighbors():
+                right_color = game_state.board.get(neighbor) == capture_player
+                one_liberty = count_liberties(game_state, neighbor) == 1
+                if right_color and one_liberty:
+                    escape_candidates += liberties(game_state, neighbor)
     return escape_candidates
 
 def count_liberties(game_state: GameState, point: Point):

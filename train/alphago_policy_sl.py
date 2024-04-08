@@ -9,16 +9,18 @@ from AlphaZero import alpha_zero
 
 from keras.callbacks import ModelCheckpoint
 import h5py
+import numpy as np
 
 
 rows, cols = 19, 19
 num_classes = rows * cols
-num_games = 100
+num_games = 10
 
 encoder = AlphaGoEncoder((rows,cols))
 processor = GoDataProcessor(encoder=encoder.name())
-X, y = processor.load_go_data('train', num_games, use_generator=False)
-test_X, test_y = processor.load_go_data('test', num_games, use_generator=False)
+
+X, y = np.load('go/data/raw/features_train.npy')
+test_X, test_y = np.load('go/data/raw/labels_train.npy')
 
 input_shape = (encoder.num_planes, rows, cols)
 alphago_sl_policy = alpha_zero.alphago_model(input_shape, is_policy_net=True)

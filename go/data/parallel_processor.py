@@ -20,18 +20,28 @@ from go.encoders.base import get_encoder_by_name
 from go.utils import print_board
 
 def worker(jobinfo):   
-    try:
-        i, clazz, encoder, zip_file, data_file_name, game_list = jobinfo
-        clazz(encoder=encoder).process_zip(i,zip_file, data_file_name, game_list)
-    except (KeyboardInterrupt, SystemExit) as e:
-        print("From Worker: ",e)
-        raise Exception('>>> Exiting child process.')
+    #try:
+    i, clazz, encoder, zip_file, data_file_name, game_list = jobinfo
+    clazz(encoder=encoder).process_zip(i,zip_file, data_file_name, game_list)
+    #except (KeyboardInterrupt, SystemExit) as e:
+    #    print("From Worker: ",e)
+    #    raise Exception('>>> Exiting child process.')
 
 class GoDataProcessor:
     def __init__(self, encoder='simple', data_directory='data/raw'):
         self.encoder_string = encoder
         self.encoder = get_encoder_by_name(encoder, 19)
         self.data_dir = os.getcwd() + '/go/' + data_directory
+
+    def generate_samples(self, data_type='train', num_samples=1000):
+        index = KGSIndex(data_directory=self.data_dir)
+        index.download_files()
+        
+        print("start sampler.....")
+        sampler = Sampler(data_dir=self.data_dir,index=index)
+        data = sampler.draw_data(data_type, num_samples)
+        print("data drawed....")
+        return data
 
 # tag::load_generator[]
     def load_go_data(self, data_type='train', num_samples=1000,
@@ -189,7 +199,7 @@ class GoDataProcessor:
                 indices_by_zip_name[filename] = []
             indices_by_zip_name[filename].append(index)
         
-        cores = 6  # Determine number of CPU cores and split work load among them
+        cores = 1  # Determine number of CPU cores and split work load among them
         zips_to_process = []
         for i, zip_name in enumerate(zip_names):
             base_name = zip_name.replace('.tar.gz', '')
@@ -202,20 +212,20 @@ class GoDataProcessor:
 
         p = pool.map_async(worker, zips_to_process)
 
-        try:
+        #try:
             #async_results = [pool.apply_async(worker, (zip_to_process,)) for zip_to_process in zips_to_process]
-            p.get()
+        p.get()
 
             # Important to print these blanks
-            print("\n" * (cores + 1))
+        print("\n" * (cores + 1))
                 
-        except (KeyboardInterrupt, TimeoutError, Exception) as e:  # Caught keyboard interrupt, terminating workers
-            pool.terminate()
-            pool.join()
-            print("Error")
-            print(type(e))
-            print(e)
-            exit(-1)
+        #except (KeyboardInterrupt, TimeoutError, Exception) as e:  # Caught keyboard interrupt, terminating workers
+        #    pool.terminate()
+        #    pool.join()
+        #    print("Error")
+        #    print(type(e))
+        #    print(e)
+        #    exit(-1)
 
 
     def num_total_examples(self, zip_file, game_list, name_list):
