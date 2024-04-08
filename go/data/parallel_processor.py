@@ -6,7 +6,7 @@ import gzip
 import shutil
 import numpy as np
 from multiprocessing import Pool, RLock, current_process, freeze_support
-import sys
+import time
 from keras.utils import to_categorical
 from tqdm import tqdm
 
@@ -36,9 +36,10 @@ class GoDataProcessor:
 # tag::load_generator[]
     def load_go_data(self, data_type='train', num_samples=1000,
                      use_generator=False):
+        
         index = KGSIndex(data_directory=self.data_dir)
         index.download_files()
-
+        
         print("start sampler.....")
         sampler = Sampler(data_dir=self.data_dir,index=index)
         data = sampler.draw_data(data_type, num_samples)
@@ -179,7 +180,7 @@ class GoDataProcessor:
         return game_state, first_move_done
 
     def map_to_workers(self, data_type, samples):
-        #freeze_support() # support window
+        freeze_support() # support window
         zip_names = set()
         indices_by_zip_name = {}
         for filename, index in samples:
@@ -187,7 +188,7 @@ class GoDataProcessor:
             if filename not in indices_by_zip_name:
                 indices_by_zip_name[filename] = []
             indices_by_zip_name[filename].append(index)
-
+        
         cores = 6  # Determine number of CPU cores and split work load among them
         zips_to_process = []
         for i, zip_name in enumerate(zip_names):
