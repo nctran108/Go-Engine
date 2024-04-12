@@ -20,12 +20,12 @@ from go.encoders.base import get_encoder_by_name
 from go.utils import print_board
 
 def worker(jobinfo):   
-    #try:
-    i, clazz, encoder, zip_file, data_file_name, game_list = jobinfo
-    clazz(encoder=encoder).process_zip(i,zip_file, data_file_name, game_list)
-    #except (KeyboardInterrupt, SystemExit) as e:
-    #    print("From Worker: ",e)
-    #    raise Exception('>>> Exiting child process.')
+    try:
+        i, clazz, encoder, zip_file, data_file_name, game_list = jobinfo
+        clazz(encoder=encoder).process_zip(i,zip_file, data_file_name, game_list)
+    except (KeyboardInterrupt, SystemExit) as e:
+        print("From Worker: ",e)
+        raise Exception('>>> Exiting child process.')
 
 class GoDataProcessor:
     def __init__(self, encoder='simple', data_directory='data/raw'):
@@ -92,7 +92,8 @@ class GoDataProcessor:
         labels = np.zeros((total_examples,))
 
         counter = 0
-        with tqdm(range(total_examples), desc=tqdm_text, position=i,leave=False) as process:
+        # switch leave back to False if want to remove the bar after finish
+        with tqdm(range(total_examples), desc=tqdm_text, position=i,leave=True) as process:
             for index in game_list:
                 name = name_list[index + 1]
                 if not name.endswith('.sgf'):
@@ -199,33 +200,33 @@ class GoDataProcessor:
                 indices_by_zip_name[filename] = []
             indices_by_zip_name[filename].append(index)
         
-        cores = 1  # Determine number of CPU cores and split work load among them
+        cores = 6  # Determine number of CPU cores and split work load among them
         zips_to_process = []
         for i, zip_name in enumerate(zip_names):
             base_name = zip_name.replace('.tar.gz', '')
             data_file_name = base_name + data_type
             if not os.path.isfile(self.data_dir + '/' + data_file_name):
-                zips_to_process.append(((i%cores),self.__class__, self.encoder_string, zip_name,
+                zips_to_process.append((i,self.__class__, self.encoder_string, zip_name,
                                         data_file_name, indices_by_zip_name[zip_name]))
         
         pool = Pool(cores, initargs=(RLock(),),initializer=tqdm.set_lock)
 
         p = pool.map_async(worker, zips_to_process)
 
-        #try:
+        try:
             #async_results = [pool.apply_async(worker, (zip_to_process,)) for zip_to_process in zips_to_process]
-        p.get()
+            p.get()
 
             # Important to print these blanks
-        print("\n" * (cores + 1))
+            print("\n" * (len(zips_to_process) + 1))
                 
-        #except (KeyboardInterrupt, TimeoutError, Exception) as e:  # Caught keyboard interrupt, terminating workers
-        #    pool.terminate()
-        #    pool.join()
-        #    print("Error")
-        #    print(type(e))
-        #    print(e)
-        #    exit(-1)
+        except (KeyboardInterrupt, TimeoutError, Exception) as e:  # Caught keyboard interrupt, terminating workers
+            pool.terminate()
+            pool.join()
+            print("Error")
+            print(type(e))
+            print(e)
+            exit(-1)
 
 
     def num_total_examples(self, zip_file, game_list, name_list):
@@ -266,8 +267,8 @@ class GoDataProcessor:
         features = np.concatenate(feature_list, axis=0)
         labels = np.concatenate(label_list, axis=0)
 
-        feature_file = self.data_dir + '/features_' + data_type
-        label_file = self.data_dir + '/labels_' + data_type
+        feature_file = os.getcwd() + "/go/data/process" + '/features_' + data_type
+        label_file = os.getcwd() + "/go/data/process" + '/labels_' + data_type
         print('start saving.....')
         np.save(feature_file, features)
         np.save(label_file, labels)

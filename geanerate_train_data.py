@@ -12,7 +12,7 @@ def generate_sample(data_type='train', num_games=1000):
     processor.load_data_from_npy(data_type)
 
 def main():
-    num_games = 100
+    num_games = 10000
     # generate train
     generate_sample('train', num_games)
     # generate test
