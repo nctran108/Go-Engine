@@ -59,7 +59,7 @@ def load_experience(h5file):
             rewards=np.array(h5file['experience']['rewards'])
             )
 
-def combine_experience(collectors):
+def combine_experience(collectors) -> ExperienceBuffer:
     combined_states = np.concatenate([np.array(c.states) for c in collectors])
     combined_actions = np.concatenate([np.array(c.actions) for c in collectors])
     combined_rewards = np.concatenate([np.array(c.rewards) for c in collectors])

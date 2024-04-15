@@ -20,7 +20,7 @@ class ZeroEncoder(Encoder):
             return self.board_size * self.board_size
         raise ValueError('Cannot encode resign move')
     
-    def decode_point_index(self, index):
+    def decode_move_index(self, index):
         if index == self.board_size * self.board_size:
             return Move.pass_turn()
         row = index // self.board_size
