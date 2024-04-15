@@ -33,9 +33,20 @@ class PolicyAgent(Agent):
         # encode a game state as a numerical tensor, then pass that tensor to my model to get move probabilities.
         board_tensor = self._encoder.encode(game_state)
         X = np.array([board_tensor])
-        # the keras predict call makes batch predictions, so wrap the single board in an array and pull out the first
-        # item from the resulting array
-        move_probs = self._model.predict(X)[0]
+
+        if np.random.random() < self._temperature:
+            # Explore random moves.
+            move_probs = np.ones(num_moves) / num_moves
+        else:
+            # the keras predict call makes batch predictions, so wrap the single board in an array and pull out the first
+            # item from the resulting array
+            move_probs = self._model.predict(X)[0]
+
+        # Prevent move probs from getting stuck at 0 or 1.
+        eps = 1e-5
+        move_probs = np.clip(move_probs, eps, 1 - eps)
+        # Re-normalize to get another probability distribution.
+        move_probs = move_probs / np.sum(move_probs)
 
         # creates an array containing the index of every point on the board
         num_moves = self._encoder.board_width * self._encoder.board_height

@@ -1,8 +1,9 @@
 kgs_index.html
 go/data/raw
-go/data/processed
+go/data/process
 *.tar.gz
 *.tar
 *.h5
 checkpoints
 go/__pycache__/
+bots

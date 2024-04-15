@@ -7,6 +7,7 @@ import h5py
 from go import agent
 from go import scoring
 from go.goboard import GameState, Player, Point
+from tqdm import tqdm
 
 
 BOARD_SIZE = 9
@@ -83,8 +84,8 @@ def main():
     wins = 0
     losses = 0
     color1 = Player.black
-    for i in range(args.num_games):
-        print('Simulating game %d/%d...' % (i + 1, args.num_games))
+    for i in tqdm(range(args.num_games)):
+        #print('Simulating game %d/%d...' % (i + 1, args.num_games))
         if color1 == Player.black:
             black_player, white_player = agent1, agent2
         else:

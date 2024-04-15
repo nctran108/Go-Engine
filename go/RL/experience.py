@@ -69,3 +69,27 @@ def combine_experience(collectors):
                             combined_actions,
                             combined_rewards,
                             combined_advantages)
+
+class ZeroExperienceCollector:
+    def __init__(self):
+        self.states = []
+        self.visit_counts = []
+        self.rewards = []
+        self.current_episode_states = []
+        self.current_episode_visit_counts = []
+
+    def begin_episode(self):
+        self.current_episode_states = []
+        self.current_episode_visit_counts = []
+    
+    def record_decision(self, state, visit_counts):
+        self.current_episode_states.append(state)
+        self.current_episode_visit_counts.append(visit_counts)
+    
+    def complete_episode(self, reward):
+        num_states = len(self.current_episode_states)
+        self.states += self.current_episode_states
+        self.visit_counts += self.current_episode_visit_counts
+        self.rewards += [reward for _ in range(num_states)]
+
+        self.begin_episode()

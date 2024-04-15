@@ -1,5 +1,5 @@
 from keras.models import Sequential
-from keras.layers import Dense, Flatten
+from keras.layers import Dense, Flatten, Dropout
 from keras.layers import Conv2D
 from tqdm import tqdm
 
@@ -20,7 +20,10 @@ def alphago_model(input_shape, is_policy_net=False,
                          padding='same',
                          data_format='channels_first',
                          activation='relu'))
-
+        if i == 5:
+            Dropout(rate=0.5)
+    
+    Dropout(rate=0.5)
     if is_policy_net:
         # this is for policy network
         # output = 1

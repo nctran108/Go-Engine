@@ -7,7 +7,7 @@ from go.goboard import GameState, Move
 class Branch:
     def __init__(self, prior):
         """this object store value of each branch"""
-        self.prior = prior
+        self.prior = prior # probability of the move
         self.visit_count = 0
         self.total_value = 0.0
     
@@ -65,22 +65,78 @@ class ZeroAgent(Agent):
         self.encoder = encoder
 
         self.collector = None
-
-        self.num_rounds = rounds_per_move
+        # num_moves controls the number of times you repeat the search process
+        self.num_rounds = rounds_per_move 
         self.c = c
 
-    def select_move(self, game_state):
-        pass
+    def select_move(self, game_state: GameState):
+        root = self.create_node(game_state)
+
+        for i in range(self.num_rounds): # this is the first step in a process that repeats many times per move
+            node = root
+            next_move = self.select_branch(node) # select move that have max score
+            while node.has_child(next_move): # when has child return False, you've reach the bottom of the tree
+                node = node.get_child(next_move)
+                next_move = self.select_branch(node)
+            
+            # end walk down and start back up
+            # this is back propagation steps to walk back to the top of the tree and update all nodes
+            new_state = node.state.apply_move(next_move)
+            child_node = self.create_node(new_state, parent=node)
+
+            move = next_move
+            value = -1 * child_node.value # each level in the tree, you switch perspective between the two players.
+                                          # therefore, you must multiply the value by -1.
+            while node is not None:
+                node.record_visit(move, value)
+                move = node.last_move
+                node = node.parent
+                value = -1 * value
+        
+        if self.collector is not None:
+            root_state_tensor = self.encoder.encode(game_state)
+            visit_counts = np.array([root.visit_count(self.encoder.decode_move_index(idx)) for idx in range(self.encoder.num_moves())])
+            self.collector.record_decision(root_state_tensor, visit_counts)
+
+        return max(root.moves(), key=root.visit_count)
     
-    def set_collector(self):
-        pass
+    def set_collector(self, collector):
+        self.collector = collector
 
-    def select_branch(self, node):
-        pass
+    def select_branch(self, node: ZeroTreeNode):
+        total_n = node.total_visit_count
 
-    def create_node(self, game_state: GameState, move=None, parent=None):
-        pass
+        def score_branch(move):
+            q = node.expected_value(move)
+            p = node.prior(move)
+            n = node.visit_count(move)
+            return q + self.c * p * np.sqrt(total_n) / (n + 1)
+        return max(node.moves(), key=score_branch)
+
+    def create_node(self, game_state: GameState, move=None, parent: ZeroTreeNode=None) -> ZeroTreeNode:
+        state_tensor = self.encoder.encode(game_state)
+        model_input = np.array([state_tensor])
+        priors, values = self.model.predict(model_input)
+        priors = priors[0]
+        value = values[0][0]
+        move_priors = {self.encoder.decode_move_index(idx): p for idx,p in enumerate(priors)}
+        new_node = ZeroTreeNode(game_state, value, move_priors, parent, move)
+        if parent is not None:
+            parent.add_child(move, new_node)
+        return new_node
 
     def train(self, experience, learning_rate, batch_size):
-        pass
+        num_examples = experience.states.shape[0]
 
+        model_input = experience.states
+
+        visit_sums = np.sum(experience.visit_counts, axis=1).reshape(num_examples, 1)
+        action_target = experience.visit_counts / visit_sums
+
+        value_target = experience.rewards
+
+        self.model.compile(SGD(lr=learning_rate),
+                           loss=['categorical_crossentropy', 'mse'])
+        self.model.fit(model_input,
+                       [action_target,value_target],
+                       batch_size=batch_size)

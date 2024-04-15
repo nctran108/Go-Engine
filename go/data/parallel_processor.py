@@ -191,7 +191,6 @@ class GoDataProcessor:
         return game_state, first_move_done
 
     def map_to_workers(self, data_type, samples):
-        freeze_support() # support window
         zip_names = set()
         indices_by_zip_name = {}
         for filename, index in samples:
@@ -266,6 +265,9 @@ class GoDataProcessor:
 
         features = np.concatenate(feature_list, axis=0)
         labels = np.concatenate(label_list, axis=0)
+
+        if not os.path.isdir(os.getcwd() + "/go/data/process"):
+            os.makedirs(os.getcwd() + "/go/data/process")
 
         feature_file = os.getcwd() + "/go/data/process" + '/features_' + data_type
         label_file = os.getcwd() + "/go/data/process" + '/labels_' + data_type
