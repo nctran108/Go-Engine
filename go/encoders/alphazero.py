@@ -12,6 +12,9 @@ class ZeroEncoder(Encoder):
         # 9. 1 if opponent gets komi
         # 10. move would be illegal due to ko
         self.num_planes = 11
+        self.moves = []
+        for idx in range(self.num_moves()):
+            self.moves.append(self.decode_move_index(idx))
 
     def encode_move(self, move: Move):
         if move.is_play:

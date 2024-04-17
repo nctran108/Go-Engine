@@ -88,7 +88,7 @@ class ZeroAgent(Agent):
             node = root
             next_move = self.select_branch(node) # select move that have max score
             # move down to bottom of the branch
-            while node.has_child(next_move): # when has child return False, you've reach the bottom of the tree
+            while node.has_child(next_move) and (not node.state.is_over()): # when has child return False, you've reach the bottom of the tree
                 node = node.get_child(next_move)
                 next_move = self.select_branch(node)
             
@@ -96,7 +96,7 @@ class ZeroAgent(Agent):
             # this is back propagation steps to walk back to the top of the tree and update all nodes
             new_state = node.state.apply_move(next_move)
             move = next_move
-            child_node = self.create_node(new_state,move=new_state.last_move, parent=node)
+            child_node = self.create_node(new_state, parent=node)
             
             value = -1 * child_node.value # each level in the tree, you switch perspective between the two players.
                                           # therefore, you must multiply the value by -1.
@@ -108,9 +108,8 @@ class ZeroAgent(Agent):
         
         if self.collector is not None:
             root_state_tensor = self.encoder.encode(game_state)
-            visit_counts = np.array([root.visit_count(root.get_move(self.encoder.decode_point_index(idx)))\
+            visit_counts = np.array([root.visit_count(self.encoder.moves[idx])\
                                       for idx in range(self.encoder.num_moves())])
-            #print(visit_counts)
             self.collector.record_decision(root_state_tensor, visit_counts)
 
         return max(root.moves(), key=root.visit_count)
@@ -141,7 +140,7 @@ class ZeroAgent(Agent):
         
         value = values[0][0]
 
-        move_priors = {self.encoder.decode_move_index(idx): p for idx,p in enumerate(priors)}
+        move_priors = {self.encoder.moves[idx]: p for idx,p in enumerate(priors)}
 
         new_node = ZeroTreeNode(game_state, value,
                                 move_priors,
@@ -154,12 +153,8 @@ class ZeroAgent(Agent):
         num_examples = experience.states.shape[0]
 
         model_input = experience.states
-        #print(experience.visit_counts)
         visit_sums = np.sum(experience.visit_counts, axis=1).reshape(num_examples, 1)
-        if visit_sums == 0:
-            action_target = experience.visit_counts
-        else:
-            action_target = experience.visit_counts / visit_sums
+        action_target = experience.visit_counts / visit_sums
 
         value_target = experience.rewards
 

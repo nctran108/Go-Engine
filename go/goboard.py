@@ -246,5 +246,3 @@ class GameState():
         game_result = compute_game_result(self)
         return game_result.winner
     
-    def color(self, point: Point) -> Player:
-        return self.board.get(point)

@@ -2,6 +2,7 @@ import sys
 import os
 sys.path.append(os.getcwd())
 
+import argparse
 from go.data.parallel_processor import GoDataProcessor
 from go.encoders import ZeroEncoder
 from go.agent import ZeroAgent
@@ -42,50 +43,53 @@ def simulate_game(
         black_collector.complete_episode(-1)
         white_collector.complete_episode(1)
 
+def main(args):
+    board_size = 13
+    encoder = ZeroEncoder(board_size)
+    board_input = Input(shape=encoder.shape(), name='board_input')
+    pb = board_input
 
-board_size = 9
-encoder = ZeroEncoder(board_size)
-board_input = Input(shape=encoder.shape(), name='board_input')
-pb = board_input
-
-for i in range(4):
-    pd = Conv2D(64, (3,3),
-                padding='same',
-                data_format='channels_first',
-                activation='relu')(pb)
-
-policy_conv = Conv2D(2, (1,1),
-                     data_format='channels_first',
-                     activation='relu')(pb)
-
-policy_flat = Flatten()(policy_conv)
-policy_output = Dense(encoder.num_moves(), activation='softmax')(policy_flat)
-
-value_conv = Conv2D(1, (1,1),
+    for i in range(4):
+        pb = Conv2D(64, (3,3),
+                    padding='same',
                     data_format='channels_first',
                     activation='relu')(pb)
-value_flat = Flatten()(value_conv)
-value_hidden = Dense(256, activation='relu')(value_flat)
-value_output = Dense(1, activation='tanh')(value_hidden)
 
-model = Model(inputs=[board_input],
-              outputs=[policy_output,value_output])
+    policy_conv = Conv2D(2, (1,1),
+                        data_format='channels_first',
+                        activation='relu')(pb)
 
-black_agent = ZeroAgent(model, encoder, rounds_per_move=10, c=2.0)
-white_agent = ZeroAgent(model, encoder, rounds_per_move=10, c=2.0)
+    policy_flat = Flatten()(policy_conv)
+    policy_output = Dense(encoder.num_moves(), activation='softmax')(policy_flat)
 
-c1 = ZeroExperienceCollector()
-c2 = ZeroExperienceCollector()
+    value_conv = Conv2D(1, (1,1),
+                        data_format='channels_first',
+                        activation='relu')(pb)
+    value_flat = Flatten()(value_conv)
+    value_hidden = Dense(256, activation='relu')(value_flat)
+    value_output = Dense(1, activation='tanh')(value_hidden)
 
-black_agent.set_collector(c1)
-white_agent.set_collector(c2)
+    model = Model(inputs=[board_input],
+                outputs=[policy_output,value_output])
 
-for i in range(1):
-    simulate_game(board_size, black_agent, c1, white_agent, c2)
+    black_agent = ZeroAgent(model, encoder, rounds_per_move=1600, c=2.0)
+    white_agent = ZeroAgent(model, encoder, rounds_per_move=1600, c=2.0)
 
-exp = combine_zero_experience([c1, c2])
+    c1 = ZeroExperienceCollector()
+    c2 = ZeroExperienceCollector()
 
-black_agent.train(exp, 0.01, 2048)
+    black_agent.set_collector(c1)
+    white_agent.set_collector(c2)
 
-with h5py.File('bots/9x9_zero_10_rounds_5_games.h5', 'w') as agent_outf:
-    exp.serialize(agent_outf)
+    for i in range(5):
+        simulate_game(board_size, black_agent, c1, white_agent, c2)
+
+    exp = combine_zero_experience([c1, c2])
+
+    black_agent.train(exp, 0.01, 2048)
+
+    with h5py.File('bots/13x13_zero_1600_rounds_5_games.h5', 'w') as agent_outf:
+        exp.serialize(agent_outf)
+
+if __name__ == "__main__":
+    main()
