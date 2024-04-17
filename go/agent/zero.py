@@ -4,6 +4,7 @@ from keras.optimizers import SGD
 from go.agent.base import Agent
 from go.goboard import GameState, Move
 from go import kerasutil
+from go.utils import print_board
 
 from go.encoders import get_encoder_by_name
 
@@ -31,6 +32,15 @@ class ZeroTreeNode:
     def moves(self):
         return self.branches.keys()
     
+    def get_move(self, point):
+        moves = self.moves()
+        for move in moves:
+            if move.point == point:
+                return move
+            elif move == Move.pass_turn:
+                return Move.pass_turn
+        return None
+    
     def add_child(self, move, child_node):
         self.children[move] = child_node
 
@@ -47,9 +57,7 @@ class ZeroTreeNode:
         return branch.total_value / branch.visit_count
     
     def prior(self, move):
-        if move in self.branches:
-            return self.branches[move].prior
-        return None
+        return self.branches[move].prior
 
     def visit_count(self, move):
         if move in self.branches:
@@ -74,10 +82,12 @@ class ZeroAgent(Agent):
 
     def select_move(self, game_state: GameState):
         root = self.create_node(game_state)
+        #print_board(game_state.board)
 
         for i in range(self.num_rounds): # this is the first step in a process that repeats many times per move
             node = root
             next_move = self.select_branch(node) # select move that have max score
+            # move down to bottom of the branch
             while node.has_child(next_move): # when has child return False, you've reach the bottom of the tree
                 node = node.get_child(next_move)
                 next_move = self.select_branch(node)
@@ -85,9 +95,9 @@ class ZeroAgent(Agent):
             # end walk down and start back up
             # this is back propagation steps to walk back to the top of the tree and update all nodes
             new_state = node.state.apply_move(next_move)
-            child_node = self.create_node(new_state, parent=node)
-
             move = next_move
+            child_node = self.create_node(new_state,move=new_state.last_move, parent=node)
+            
             value = -1 * child_node.value # each level in the tree, you switch perspective between the two players.
                                           # therefore, you must multiply the value by -1.
             while node is not None:
@@ -98,7 +108,9 @@ class ZeroAgent(Agent):
         
         if self.collector is not None:
             root_state_tensor = self.encoder.encode(game_state)
-            visit_counts = np.array([root.visit_count(self.encoder.decode_move_index(idx)) for idx in range(self.encoder.num_moves())])
+            visit_counts = np.array([root.visit_count(root.get_move(self.encoder.decode_point_index(idx)))\
+                                      for idx in range(self.encoder.num_moves())])
+            #print(visit_counts)
             self.collector.record_decision(root_state_tensor, visit_counts)
 
         return max(root.moves(), key=root.visit_count)
@@ -120,10 +132,20 @@ class ZeroAgent(Agent):
         state_tensor = self.encoder.encode(game_state)
         model_input = np.array([state_tensor])
         priors, values = self.model.predict(model_input)
+
         priors = priors[0]
+        # add Dirichlet noise to the root node
+        if parent is None:
+            noise = np.random.dirichlet(0.03 * np.ones_like(priors))
+            priors = 0.75 * priors + 0.25 * noise
+        
         value = values[0][0]
+
         move_priors = {self.encoder.decode_move_index(idx): p for idx,p in enumerate(priors)}
-        new_node = ZeroTreeNode(game_state, value, move_priors, parent, move)
+
+        new_node = ZeroTreeNode(game_state, value,
+                                move_priors,
+                                parent, move)
         if parent is not None:
             parent.add_child(move, new_node)
         return new_node
@@ -132,13 +154,16 @@ class ZeroAgent(Agent):
         num_examples = experience.states.shape[0]
 
         model_input = experience.states
-
+        #print(experience.visit_counts)
         visit_sums = np.sum(experience.visit_counts, axis=1).reshape(num_examples, 1)
-        action_target = experience.visit_counts / visit_sums
+        if visit_sums == 0:
+            action_target = experience.visit_counts
+        else:
+            action_target = experience.visit_counts / visit_sums
 
         value_target = experience.rewards
 
-        self.model.compile(SGD(lr=learning_rate),
+        self.model.compile(SGD(learning_rate=learning_rate),
                            loss=['categorical_crossentropy', 'mse'])
         self.model.fit(model_input,
                        [action_target,value_target],

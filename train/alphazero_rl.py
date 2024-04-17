@@ -5,7 +5,7 @@ sys.path.append(os.getcwd())
 from go.data.parallel_processor import GoDataProcessor
 from go.encoders import ZeroEncoder
 from go.agent import ZeroAgent
-from go.RL import ZeroExperienceCollector, combine_experience
+from go.RL import ZeroExperienceCollector, combine_zero_experience
 from keras.layers import Activation, BatchNormalization, Conv2D, Dense, Flatten, Input
 from go.gotypes import Player
 from go.goboard import GameState
@@ -43,7 +43,7 @@ def simulate_game(
         white_collector.complete_episode(1)
 
 
-board_size = 19
+board_size = 9
 encoder = ZeroEncoder(board_size)
 board_input = Input(shape=encoder.shape(), name='board_input')
 pb = board_input
@@ -80,12 +80,12 @@ c2 = ZeroExperienceCollector()
 black_agent.set_collector(c1)
 white_agent.set_collector(c2)
 
-for i in range(5):
+for i in range(1):
     simulate_game(board_size, black_agent, c1, white_agent, c2)
 
-exp = combine_experience([c1, c2])
+exp = combine_zero_experience([c1, c2])
 
 black_agent.train(exp, 0.01, 2048)
 
-with h5py.File('bots/19x19_zero_10_rounds_5_games.h5', 'w') as agent_outf:
+with h5py.File('bots/9x9_zero_10_rounds_5_games.h5', 'w') as agent_outf:
     exp.serialize(agent_outf)

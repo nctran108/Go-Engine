@@ -27,6 +27,13 @@ class ZeroEncoder(Encoder):
         col = index % self.board_size
         return Move.play(Point(row=row+1,col=col+1))
     
+    def decode_point_index(self, index):
+        if index == self.board_size * self.board_size:
+            return None
+        row = index // self.board_size
+        col = index % self.board_size
+        return Point(row=row+1,col=col+1)
+
     def num_moves(self):
         return self.board_size * self.board_size + 1
     
