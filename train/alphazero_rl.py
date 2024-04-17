@@ -43,7 +43,7 @@ def simulate_game(
         black_collector.complete_episode(-1)
         white_collector.complete_episode(1)
 
-def main(args):
+def main():
     board_size = 13
     encoder = ZeroEncoder(board_size)
     board_input = Input(shape=encoder.shape(), name='board_input')
@@ -52,20 +52,25 @@ def main(args):
     for i in range(4):
         pb = Conv2D(64, (3,3),
                     padding='same',
-                    data_format='channels_first',
-                    activation='relu')(pb)
+                    data_format='channels_first')(pb)
+        pb = BatchNormalization(axis=1)(pb)
+        pb = Activation('relu')(pb)
 
+    # Policy output
     policy_conv = Conv2D(2, (1,1),
-                        data_format='channels_first',
-                        activation='relu')(pb)
-
-    policy_flat = Flatten()(policy_conv)
+                        data_format='channels_first')(pb)
+    policy_batch = BatchNormalization(axis=1)(policy_conv)
+    policy_relu = Activation('relu')(policy_batch)
+    policy_flat = Flatten()(policy_relu)
     policy_output = Dense(encoder.num_moves(), activation='softmax')(policy_flat)
 
+    # value output
     value_conv = Conv2D(1, (1,1),
                         data_format='channels_first',
                         activation='relu')(pb)
-    value_flat = Flatten()(value_conv)
+    value_batch = BatchNormalization(axis=1)(value_conv)
+    value_relu = Activation('relu')(value_batch)
+    value_flat = Flatten()(value_relu)
     value_hidden = Dense(256, activation='relu')(value_flat)
     value_output = Dense(1, activation='tanh')(value_hidden)
 
