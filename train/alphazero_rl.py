@@ -5,15 +5,13 @@ sys.path.append(os.getcwd())
 import argparse
 from go.data.parallel_processor import GoDataProcessor
 from go.encoders import ZeroEncoder
-from go.agent import ZeroAgent
+from go.agent import ZeroAgent, load_zero_agent
 from go.RL import ZeroExperienceCollector, combine_zero_experience
-from keras.layers import Activation, BatchNormalization, Conv2D, Dense, Flatten, Input
 from go.gotypes import Player
 from go.goboard import GameState
 from go.score import compute_game_result
 from networks import alphaZero
 
-from keras.models import Model
 import h5py
 import numpy as np
 
@@ -46,11 +44,15 @@ def simulate_game(
 
 def main():
     board_size = 13
-    encoder = ZeroEncoder(board_size)
+    #encoder = ZeroEncoder(board_size)
 
-    model = alphaZero.model(encoder)
-    black_agent = ZeroAgent(model, encoder, rounds_per_move=1600, c=2.0)
-    white_agent = ZeroAgent(model, encoder, rounds_per_move=1600, c=2.0)
+    #model = alphaZero.model(encoder)
+    #black_agent = ZeroAgent(model, encoder, rounds_per_move=1600, c=2.0)
+    #white_agent = ZeroAgent(model, encoder, rounds_per_move=1600, c=2.0)
+
+    with h5py.File('bots/13x13_zero_1600_rounds_5_games.h5', 'r') as agent_input:
+        black_agent = load_zero_agent(agent_input)
+        white_agent = load_zero_agent(agent_input)
 
     c1 = ZeroExperienceCollector()
     c2 = ZeroExperienceCollector()
@@ -58,14 +60,15 @@ def main():
     black_agent.set_collector(c1)
     white_agent.set_collector(c2)
 
-    for i in range(5):
+    num_games = 10
+    for i in range(num_games):
         simulate_game(board_size, black_agent, c1, white_agent, c2)
 
     exp = combine_zero_experience([c1, c2])
 
     black_agent.train(exp, 0.01, 2048)
 
-    with h5py.File('bots/13x13_zero_1600_rounds_5_games.h5', 'w') as agent_outf:
+    with h5py.File('bots/13x13_zero_1600_rounds_10_games.h5', 'w') as agent_outf:
         exp.serialize(agent_outf)
 
 if __name__ == "__main__":
