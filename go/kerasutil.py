@@ -16,7 +16,7 @@ def save_model_to_hdf5_group(model, f):
         os.close(tempfd)
         save_model(model, tempfname) 
         serialized_model = h5py.File(tempfname, 'r')
-        root_item = serialized_model.get('/bots')
+        root_item = serialized_model.get('/')
         serialized_model.copy(root_item, f, 'kerasmodel')
         serialized_model.close()
     finally:

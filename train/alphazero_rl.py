@@ -44,15 +44,15 @@ def simulate_game(
 
 def main():
     board_size = 13
-    #encoder = ZeroEncoder(board_size)
+    encoder = ZeroEncoder(board_size)
 
-    #model = alphaZero.model(encoder)
-    #black_agent = ZeroAgent(model, encoder, rounds_per_move=1600, c=2.0)
-    #white_agent = ZeroAgent(model, encoder, rounds_per_move=1600, c=2.0)
+    model = alphaZero.model(encoder)
+    black_agent = ZeroAgent(model, encoder, rounds_per_move=1600, c=2.0)
+    white_agent = ZeroAgent(model, encoder, rounds_per_move=1600, c=2.0)
 
-    print(os.getcwd())
-    black_agent = load_zero_agent(h5py.File('bots/13x13_zero_1600_rounds_5_games.h5'))
-    white_agent = load_zero_agent(h5py.File('bots/13x13_zero_1600_rounds_5_games.h5'))
+    #print(os.getcwd())
+    #black_agent = load_zero_agent(h5py.File('bots/13x13_zero_1600_rounds_5_games.h5'))
+    #white_agent = load_zero_agent(h5py.File('bots/13x13_zero_1600_rounds_5_games.h5'))
 
     c1 = ZeroExperienceCollector()
     c2 = ZeroExperienceCollector()
@@ -69,7 +69,7 @@ def main():
     black_agent.train(exp, 0.01, 2048)
 
     with h5py.File('bots/13x13_zero_1600_rounds_10_games.h5', 'w') as agent_outf:
-        exp.serialize(agent_outf)
+        black_agent.serialize(agent_outf)
 
 if __name__ == "__main__":
     main()
