@@ -177,6 +177,7 @@ class ZeroAgent(Agent):
         kerasutil.save_model_to_hdf5_group(self.model, h5file['model'])
 
 def load_zero_agent(h5file):
+    print(h5file['model'])
     model = kerasutil.load_model_from_hdf5_group(h5file['model'])
     encoder_name = h5file['encoder'].attrs['name']
     if not isinstance(encoder_name, str):

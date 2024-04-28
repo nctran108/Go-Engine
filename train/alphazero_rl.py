@@ -50,9 +50,9 @@ def main():
     #black_agent = ZeroAgent(model, encoder, rounds_per_move=1600, c=2.0)
     #white_agent = ZeroAgent(model, encoder, rounds_per_move=1600, c=2.0)
 
-    with h5py.File('bots/13x13_zero_1600_rounds_5_games.h5', 'r') as agent_input:
-        black_agent = load_zero_agent(agent_input)
-        white_agent = load_zero_agent(agent_input)
+    print(os.getcwd())
+    black_agent = load_zero_agent(h5py.File('bots/13x13_zero_1600_rounds_5_games.h5'))
+    white_agent = load_zero_agent(h5py.File('bots/13x13_zero_1600_rounds_5_games.h5'))
 
     c1 = ZeroExperienceCollector()
     c2 = ZeroExperienceCollector()
