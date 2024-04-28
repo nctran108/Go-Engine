@@ -167,8 +167,7 @@ class ZeroAgent(Agent):
     def serialize(self, h5file):
         h5file.create_group('encoder')
         h5file['encoder'].attrs['name'] = self.encoder.name()
-        h5file['encoder'].attrs['board_width'] = self.encoder.board_width
-        h5file['encoder'].attrs['board_height'] = self.encoder.board_height
+        h5file['encoder'].attrs['board_size'] = self.encoder.board_size
         h5file.create_group('rounds_per_move')
         h5file['rounds_per_move'].create_dataset('value', data=self.num_rounds)
         h5file.create_group('c')
@@ -182,10 +181,9 @@ def load_zero_agent(h5file):
     encoder_name = h5file['encoder'].attrs['name']
     if not isinstance(encoder_name, str):
         encoder_name = encoder_name.decode('ascii')
-    board_width = h5file['encoder'].attrs['board_width']
-    board_height = h5file['encoder'].attrs['board_height']
+    board_size = h5file['encoder'].attrs['board_size']
     encoder = get_encoder_by_name(encoder_name,
-                                 (board_width, board_height))
+                                 board_size)
     rounds_per_move = h5file['rounds_per_move']['value'].value
     c = h5file['c']['value'].value
     return ZeroAgent(model, encoder, rounds_per_move, c)

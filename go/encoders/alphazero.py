@@ -16,6 +16,9 @@ class ZeroEncoder(Encoder):
         for idx in range(self.num_moves()):
             self.moves.append(self.decode_move_index(idx))
 
+    def name(self):
+        return 'alphazero'
+
     def encode_move(self, move: Move):
         if move.is_play:
             return (self.board_size * (move.point.row - 1) + (move.point.col -1))
