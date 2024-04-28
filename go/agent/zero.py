@@ -184,6 +184,6 @@ def load_zero_agent(h5file):
     board_size = h5file['encoder'].attrs['board_size']
     encoder = get_encoder_by_name(encoder_name,
                                  board_size)
-    rounds_per_move = h5file['rounds_per_move']['value'].value
-    c = h5file['c']['value'].value
+    rounds_per_move = np.array(h5file['rounds_per_move']['value'])
+    c = np.array(h5file['c']['value'])
     return ZeroAgent(model, encoder, rounds_per_move, c)
