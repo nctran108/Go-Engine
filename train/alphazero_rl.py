@@ -11,6 +11,7 @@ from keras.layers import Activation, BatchNormalization, Conv2D, Dense, Flatten,
 from go.gotypes import Player
 from go.goboard import GameState
 from go.score import compute_game_result
+from networks import alphaZero
 
 from keras.models import Model
 import h5py
@@ -46,37 +47,8 @@ def simulate_game(
 def main():
     board_size = 13
     encoder = ZeroEncoder(board_size)
-    board_input = Input(shape=encoder.shape(), name='board_input')
-    pb = board_input
 
-    for i in range(4):
-        pb = Conv2D(64, (3,3),
-                    padding='same',
-                    data_format='channels_first')(pb)
-        pb = BatchNormalization(axis=1)(pb)
-        pb = Activation('relu')(pb)
-
-    # Policy output
-    policy_conv = Conv2D(2, (1,1),
-                        data_format='channels_first')(pb)
-    policy_batch = BatchNormalization(axis=1)(policy_conv)
-    policy_relu = Activation('relu')(policy_batch)
-    policy_flat = Flatten()(policy_relu)
-    policy_output = Dense(encoder.num_moves(), activation='softmax')(policy_flat)
-
-    # value output
-    value_conv = Conv2D(1, (1,1),
-                        data_format='channels_first',
-                        activation='relu')(pb)
-    value_batch = BatchNormalization(axis=1)(value_conv)
-    value_relu = Activation('relu')(value_batch)
-    value_flat = Flatten()(value_relu)
-    value_hidden = Dense(256, activation='relu')(value_flat)
-    value_output = Dense(1, activation='tanh')(value_hidden)
-
-    model = Model(inputs=[board_input],
-                outputs=[policy_output,value_output])
-
+    model = alphaZero.model(encoder)
     black_agent = ZeroAgent(model, encoder, rounds_per_move=1600, c=2.0)
     white_agent = ZeroAgent(model, encoder, rounds_per_move=1600, c=2.0)
 
