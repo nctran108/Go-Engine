@@ -5,13 +5,14 @@ import os
 import h5py
 import keras
 from keras.models import load_model, save_model
+import tensorflow as tf
 
 
 def save_model_to_hdf5_group(model, f):
     # Use Keras save_model to save the full model (including optimizer
     # state) to a file.
     # Then we can embed the contents of that HDF5 file inside ours.
-    tempfd, tempfname = tempfile.mkstemp(prefix='tmp-kerasmodel', suffix='.weights.h5')
+    tempfd, tempfname = tempfile.mkstemp(prefix='tmp-kerasmodel', suffix='.keras')
     try:
         os.close(tempfd)
         save_model(model, tempfname) 
@@ -26,7 +27,7 @@ def save_model_to_hdf5_group(model, f):
 def load_model_from_hdf5_group(f, custom_objects=None):
     # Extract the model into a temporary file. Then we can use Keras
     # load_model to read it.
-    tempfd, tempfname = tempfile.mkstemp(prefix='tmp-kerasmodel')
+    tempfd, tempfname = tempfile.mkstemp(prefix='tmp-kerasmodel', suffix='.keras')
     try:
         os.close(tempfd)
         serialized_model = h5py.File(tempfname, 'w')
