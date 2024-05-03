@@ -4,35 +4,19 @@ from collections import namedtuple
 
 import h5py
 
-from go import agent
-from go import scoring
+from go.agent import load_policy_agent, load_zero_agent
+from go import score
 from go.goboard import GameState, Player, Point
 from tqdm import tqdm
+from go.utils import print_board
 
 
-BOARD_SIZE = 9
-COLS = 'ABCDEFGHJKLMNOPQRST'
-STONE_TO_CHAR = {
-    None: '.',
-    Player.black: 'x',
-    Player.white: 'o',
-}
-
+BOARD_SIZE = 13
 
 def avg(items):
     if not items:
         return 0.0
     return sum(items) / float(len(items))
-
-
-def print_board(board):
-    for row in range(BOARD_SIZE, 0, -1):
-        line = []
-        for col in range(1, BOARD_SIZE + 1):
-            stone = board.get(Point(row=row, col=col))
-            line.append(STONE_TO_CHAR[stone])
-        print('%2d %s' % (row, ''.join(line)))
-    print('   ' + COLS[:BOARD_SIZE])
 
 
 class GameRecord(namedtuple('GameRecord', 'moves winner margin')):
@@ -60,7 +44,7 @@ def simulate_game(black_player, white_player):
         game = game.apply_move(next_move)
 
     print_board(game.board)
-    game_result = scoring.compute_game_result(game)
+    game_result = score.compute_game_result(game)
     print(game_result)
 
     return GameRecord(
@@ -78,8 +62,8 @@ def main():
 
     args = parser.parse_args()
 
-    agent1 = agent.load_policy_agent(h5py.File(args.agent1))
-    agent2 = agent.load_policy_agent(h5py.File(args.agent2))
+    agent1 = load_zero_agent(h5py.File(args.agent1))
+    agent2 = load_zero_agent(h5py.File(args.agent2))
 
     wins = 0
     losses = 0
