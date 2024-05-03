@@ -51,8 +51,8 @@ def main():
     #white_agent = ZeroAgent(model, encoder, rounds_per_move=1600, c=2.0)
 
     #print(os.getcwd())
-    black_agent = load_zero_agent(h5py.File('bots/13x13_zero_1600_rounds_1_games.h5'))
-    white_agent = load_zero_agent(h5py.File('bots/13x13_zero_1600_rounds_1_games.h5'))
+    black_agent = load_zero_agent(h5py.File('bots/13x13_zero_1600_rounds_10_games.h5'))
+    white_agent = load_zero_agent(h5py.File('bots/13x13_zero_1600_rounds_10_games.h5'))
 
     c1 = ZeroExperienceCollector()
     c2 = ZeroExperienceCollector()
@@ -60,7 +60,7 @@ def main():
     black_agent.set_collector(c1)
     white_agent.set_collector(c2)
 
-    num_games = 1
+    num_games = 10
     for i in range(num_games):
         simulate_game(board_size, black_agent, c1, white_agent, c2)
 
