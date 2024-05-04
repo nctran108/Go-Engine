@@ -43,7 +43,7 @@ def simulate_game(
         white_collector.complete_episode(1)
 
 def main():
-    board_size = 13
+    board_size = 9
     #encoder = ZeroEncoder(board_size)
 
     #model = alphaZero.model(encoder)
