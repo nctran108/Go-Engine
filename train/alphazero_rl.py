@@ -43,12 +43,12 @@ def simulate_game(
         white_collector.complete_episode(1)
 
 def main():
-    board_size = 9
+    board_size = 13
     encoder = ZeroEncoder(board_size)
 
     model = alphaZero.model(encoder)
-    black_agent = ZeroAgent(model, encoder, rounds_per_move=16, c=2.0)
-    white_agent = ZeroAgent(model, encoder, rounds_per_move=16, c=2.0)
+    black_agent = ZeroAgent(model, encoder, rounds_per_move=1600, c=2.0)
+    white_agent = ZeroAgent(model, encoder, rounds_per_move=1600, c=2.0)
 
     #print(os.getcwd())
     #black_agent = load_zero_agent(open('bots/13x13_zero_1600_rounds_10_games.json'), json_file=True)
