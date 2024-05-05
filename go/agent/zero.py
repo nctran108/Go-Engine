@@ -174,7 +174,8 @@ class ZeroAgent(Agent):
             file_data['rounds_per_move'] = str(self.num_rounds)
             file_data['c'] = str(self.c)
             file_data['model'] = self.model.to_json()
-            json.dump(file_data, file)
+            json.dump(file_data, "bots/model.json")
+            self.model.save_weights(file)
         else:
             file.create_group('encoder')
             file['encoder'].attrs['name'] = self.encoder.name()
@@ -188,12 +189,13 @@ class ZeroAgent(Agent):
 
 def load_zero_agent(file, json_file: bool=False):
     if json_file:
-        file_data = json.load(file)
+        file_data = json.load("bots/model.json")
         encoder_name = file_data['encoder']['name']
         board_size = int(file_data['encoder']['board_size'])
         rounds_per_move = int(file_data['rounds_per_move'])
         c = float(file_data['c'])
         model = model_from_json(file_data['model'])
+        model.load_weights(file)
     else:
         model = kerasutil.load_model_from_hdf5_group(file['model'])
         encoder_name = file['encoder'].attrs['name']
