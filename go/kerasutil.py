@@ -4,17 +4,17 @@ import os
 
 import h5py
 import keras
-from keras.models import load_model, save_model
+from keras.models import load_model, save_model, Model
 import tensorflow as tf
 
-def save_model_to_hdf5_group(model, f):
+def save_model_to_hdf5_group(model: Model, f):
     # Use Keras save_model to save the full model (including optimizer
     # state) to a file.
     # Then we can embed the contents of that HDF5 file inside ours.
     tempfd, tempfname = tempfile.mkstemp(prefix='tmp-kerasmodel', suffix='.h5')
     try:
         os.close(tempfd)
-        tf.keras.models.save_model(model, tempfname) 
+        tf.keras.models.save_model(model, tempfname)
         serialized_model = h5py.File(tempfname, 'r')
         root_item = serialized_model.get('/')
         serialized_model.copy(root_item, f, 'kerasmodel')
@@ -39,6 +39,12 @@ def load_model_from_hdf5_group(f, custom_objects=None):
         return tf.keras.models.load_model(tempfname, custom_objects=custom_objects)
     finally:
         os.unlink(tempfname)
+
+def save_model_to_json(model: Model, f):
+    pass
+
+def load_model_from_json(f):
+    pass
 
 
 def set_gpu_memory_target(frac):

@@ -27,7 +27,8 @@ class Encoder:
     
 def get_encoder_by_name(name, board_size):
     if isinstance(board_size, int):
-        board_size = (board_size, board_size)
+        if name != 'alphazero':
+            board_size = (board_size, board_size)
     module = importlib.import_module('go.encoders.' + name)
     constructor = getattr(module, 'create')
     return constructor(board_size)

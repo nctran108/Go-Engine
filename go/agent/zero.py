@@ -5,8 +5,10 @@ from go.agent.base import Agent
 from go.goboard import GameState, Move
 from go import kerasutil
 from go.utils import print_board
+from keras.models import Model, model_from_json
 
 from go.encoders import get_encoder_by_name
+import json
 
 class Branch:
     def __init__(self, prior):
@@ -71,7 +73,7 @@ class ZeroTreeNode:
 
 class ZeroAgent(Agent):
     """MCTS Agent for AlphaZero"""
-    def __init__(self, model, encoder, rounds_per_move=1600, c=2.0):
+    def __init__(self, model: Model, encoder, rounds_per_move=1600, c=2.0):
         self.model = model
         self.encoder = encoder
 
@@ -164,26 +166,42 @@ class ZeroAgent(Agent):
                        [action_target,value_target],
                        batch_size=batch_size)
         
-    def serialize(self, h5file):
-        h5file.create_group('encoder')
-        h5file['encoder'].attrs['name'] = self.encoder.name()
-        h5file['encoder'].attrs['board_size'] = self.encoder.board_size
-        h5file.create_group('rounds_per_move')
-        h5file['rounds_per_move'].create_dataset('value', data=self.num_rounds)
-        h5file.create_group('c')
-        h5file['c'].create_dataset('value', data=self.c)
-        h5file.create_group('model')
-        kerasutil.save_model_to_hdf5_group(self.model, h5file['model'])
+    def serialize(self, file, json_file: bool=False):
+        if json_file:
+            file_data = {}
+            file_data['encoder'] = {'name' : self.encoder.name(),
+                                    'board_size' : str(self.encoder.board_size)}
+            file_data['rounds_per_move'] = str(self.num_rounds)
+            file_data['c'] = str(self.c)
+            file_data['model'] = self.model.to_json()
+            json.dump(file_data, file)
+        else:
+            file.create_group('encoder')
+            file['encoder'].attrs['name'] = self.encoder.name()
+            file['encoder'].attrs['board_size'] = self.encoder.board_size
+            file.create_group('rounds_per_move')
+            file['rounds_per_move'].create_dataset('value', data=self.num_rounds)
+            file.create_group('c')
+            file['c'].create_dataset('value', data=self.c)
+            file.create_group('model')
+            kerasutil.save_model_to_hdf5_group(self.model, file['model'])
 
-def load_zero_agent(h5file):
-    print(h5file['model'])
-    model = kerasutil.load_model_from_hdf5_group(h5file['model'])
-    encoder_name = h5file['encoder'].attrs['name']
+def load_zero_agent(file, json_file: bool=False):
+    if json_file:
+        file_data = json.load(file)
+        encoder_name = file_data['encoder']['name']
+        board_size = int(file_data['encoder']['board_size'])
+        rounds_per_move = int(file_data['rounds_per_move'])
+        c = float(file_data['c'])
+        model = model_from_json(file_data['model'])
+    else:
+        model = kerasutil.load_model_from_hdf5_group(file['model'])
+        encoder_name = file['encoder'].attrs['name']
+        board_size = file['encoder'].attrs['board_size']
+        rounds_per_move = np.array(file['rounds_per_move']['value'])
+        c = np.array(file['c']['value'])
+
     if not isinstance(encoder_name, str):
         encoder_name = encoder_name.decode('ascii')
-    board_size = h5file['encoder'].attrs['board_size']
-    encoder = get_encoder_by_name(encoder_name,
-                                 board_size)
-    rounds_per_move = np.array(h5file['rounds_per_move']['value'])
-    c = np.array(h5file['c']['value'])
+    encoder = get_encoder_by_name(encoder_name, board_size)
     return ZeroAgent(model, encoder, rounds_per_move, c)
