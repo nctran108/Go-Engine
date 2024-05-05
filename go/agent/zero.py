@@ -5,7 +5,7 @@ from go.agent.base import Agent
 from go.goboard import GameState, Move
 from go import kerasutil
 from go.utils import print_board
-from keras.models import Model, model_from_json
+from keras.models import Model, model_from_json, save_model, load_model
 
 from go.encoders import get_encoder_by_name
 import json
@@ -174,7 +174,7 @@ class ZeroAgent(Agent):
             file_data['rounds_per_move'] = str(self.num_rounds)
             file_data['c'] = str(self.c)
             file_data['model'] = self.model.to_json()
-            json.dump(file_data, "bots/model.json")
+            json.dump(file_data, open("bots/model.json", 'w'))
             self.model.save_weights(file)
         else:
             file.create_group('encoder')
@@ -189,7 +189,7 @@ class ZeroAgent(Agent):
 
 def load_zero_agent(file, json_file: bool=False):
     if json_file:
-        file_data = json.load("bots/model.json")
+        file_data = json.load(open("bots/model.json"))
         encoder_name = file_data['encoder']['name']
         board_size = int(file_data['encoder']['board_size'])
         rounds_per_move = int(file_data['rounds_per_move'])
