@@ -51,8 +51,8 @@ def main():
     #white_agent = ZeroAgent(model, encoder, rounds_per_move=1600, c=2.0)
 
     #print(os.getcwd())
-    black_agent = load_zero_agent('bots/13x13_zero_1600_rounds_10_games.keras', json_file=True)
-    white_agent = load_zero_agent('bots/13x13_zero_1600_rounds_10_games.keras', json_file=True)
+    black_agent = load_zero_agent('bots/13x13_zero_1600_rounds_10_games.weights.h5', json_file=True)
+    white_agent = load_zero_agent('bots/13x13_zero_1600_rounds_10_games.weights.h5', json_file=True)
 
     c1 = ZeroExperienceCollector()
     c2 = ZeroExperienceCollector()
@@ -68,7 +68,7 @@ def main():
 
     black_agent.train(exp, 0.01, 2048)
 
-    black_agent.serialize('bots/13x13_zero_1600_rounds_10_games.keras', json_file=True)     
+    black_agent.serialize('bots/13x13_zero_1600_rounds_10_games.weights.h5', json_file=True)     
 
 if __name__ == "__main__":
     main()
