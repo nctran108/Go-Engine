@@ -2,6 +2,13 @@ import cv2
 import numpy as np
 import math
 
+def slope_to_angle(slope):
+    # calculate angle in radius
+    angle_rad = math.atan(slope)
+    # convert angle to degrees
+    angle_deg = math.degrees(angle_rad)
+    return angle_deg
+
 class ImageProcessing:
     def __init__(self) -> None:
         pass
@@ -23,7 +30,7 @@ class ImageProcessing:
         resized = cv2.resize(image, dim, interpolation=inter)
         return resized
 
-    def edge_detection(self, image, rho=1, theta=np.pi/180, threshold=100, minLineLength=50, maxLineGap=10):
+    def edge_detection(self, image):
         # Convert to grayscale
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
@@ -32,8 +39,6 @@ class ImageProcessing:
 
         # edge detection
         edges = cv2.Canny(blur, 50, 150, apertureSize=3) 
-
-        lines = cv2.HoughLinesP(edges, rho, theta, threshold, minLineLength, maxLineGap)   
         
         # Find contours in the edge-detected image
         contours, _ = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -48,9 +53,47 @@ class ImageProcessing:
         # Extract the corners if we have a quadrilateral
         if len(approx) == 4:
             corners = approx.reshape((4, 2))
-            return corners, lines
+            return corners
         else:
             return None
+
+    def line_detection(self, image, rho=1, theta=np.pi/180, threshold=100, minLineLength=50, maxLineGap=10):
+        # Convert to grayscale
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+        # Apply Gaussian blur to the grayscale image
+        blur = cv2.GaussianBlur(gray, (5, 5), 0)
+
+        # edge detection
+        edges = cv2.Canny(blur, 50, 150, apertureSize=3) 
+
+        lines = cv2.HoughLinesP(edges, rho, theta, threshold, minLineLength, maxLineGap)
+
+        return lines
+    
+    def classify_lines(self, lines, threshold=10):
+        vertical = []
+        horizontal = []
+
+        for line in lines:
+            for x1, y1, x2, y2 in line:
+                if x1 == x2:
+                    # Vertical line with slip is underfined
+                    vertical.append(line)
+                elif y1 == y2:
+                    # Horizontal line with slope is zero
+                    horizontal.append(line)
+                else:
+                    # fine the slope
+                    slope = (y2 - y1) / (x2 - x1)
+                    angle = slope_to_angle(slope)
+                    # check the slope angle
+                    if angle < threshold:
+                        horizontal.append(line)
+                    else:
+                        vertical.append(line)
+        return np.array(vertical), np.array(horizontal)
+
 
     def four_point_transform(self, image, pts):
         # obtain a consistent order of the points and unpack them
@@ -136,15 +179,18 @@ def main():
     image = cv2.imread('BoardRecognition/data/board_13x13.jpg')
 
     #image = cv2.resize(image, (0,0), fx = 0.1, fy = 0.1)
-    edges, lines = ImageProcessing().edge_detection(image)
+    edges = ImageProcessing().edge_detection(image)
+    lines = ImageProcessing().line_detection(image,rho=1,threshold=100,minLineLength=10,maxLineGap=10)
 
-    print(len(lines))
+    lines = np.array(lines)
+    vertical, horizontal = ImageProcessing().classify_lines(lines)
+    print(vertical.shape)
 
     for point in edges:
         cv2.circle(image, tuple(point), radius=5, color=(0,255,0), thickness=-1)
 
-    if lines is not None:
-        for line in lines:
+    if vertical is not None:
+        for line in vertical:
             pt1 = (line[0][0], line[0][1])
             pt2 = (line[0][2],line[0][3])
             cv2.line(image, pt1, pt2, (0,0,255), 2)
