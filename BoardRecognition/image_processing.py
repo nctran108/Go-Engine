@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import math
+from utils import make_line_image
 
 def slope_to_angle(slope):
     # calculate angle in radius
@@ -57,7 +58,7 @@ class ImageProcessing:
         else:
             return None
 
-    def line_detection(self, image, rho=1, theta=np.pi/180, threshold=100, minLineLength=50, maxLineGap=10):
+    def line_detection(self, image, probabilistic=True, rho=1, theta=np.pi/180, threshold=100, minLineLength=50, maxLineGap=10):
         # Convert to grayscale
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
@@ -67,7 +68,10 @@ class ImageProcessing:
         # edge detection
         edges = cv2.Canny(blur, 50, 150, apertureSize=3) 
 
-        lines = cv2.HoughLinesP(edges, rho, theta, threshold, minLineLength, maxLineGap)
+        if probabilistic:
+            lines = cv2.HoughLinesP(edges, rho, theta, threshold, minLineLength, maxLineGap)
+        else:
+            lines = cv2.HoughLines(edges, rho, theta, threshold)
 
         return lines
     
@@ -180,24 +184,23 @@ def main():
 
     #image = cv2.resize(image, (0,0), fx = 0.1, fy = 0.1)
     edges = ImageProcessing().edge_detection(image)
-    lines = ImageProcessing().line_detection(image,rho=1,threshold=100,minLineLength=10,maxLineGap=10)
+    image = ImageProcessing().four_point_transform(image, edges)
+    lines = ImageProcessing().line_detection(image,rho=1,threshold=10,minLineLength=10,maxLineGap=10)
 
     lines = np.array(lines)
-    vertical, horizontal = ImageProcessing().classify_lines(lines)
-    print(vertical.shape)
 
     for point in edges:
         cv2.circle(image, tuple(point), radius=5, color=(0,255,0), thickness=-1)
 
-    if vertical is not None:
-        for line in vertical:
-            pt1 = (line[0][0], line[0][1])
-            pt2 = (line[0][2],line[0][3])
-            cv2.line(image, pt1, pt2, (0,0,255), 2)
+    img = make_line_image(image.shape, lines)
+    img = cv2.bitwise_not(img)
 
-    image = ImageProcessing().four_point_transform(image, edges)
-
-    cv2.imshow('Go Board Corners', image)
+    lines = ImageProcessing().line_detection(img, threshold=300, probabilistic=False)
+    lines_v = [line for line in lines if line[0][1] == 0.0 if line[0][0] > 1]
+    p = round(np.pi/2 * 100, 0)
+    lines_h = [line for line in lines if round(line[0][1]*100,0) == p if line[0][0] > 1]
+    line_img = make_line_image(image.shape, lines_h, is_HoughLines=True)
+    cv2.imshow('Go Board Corners', line_img)
     if cv2.waitKey(0) & 0xFF == ord('q'):
         cv2.destroyAllWindows()
 
