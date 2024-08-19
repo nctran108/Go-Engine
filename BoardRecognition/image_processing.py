@@ -177,6 +177,13 @@ class ImageProcessing:
         return rect
     """
 
+    def unique_lines(lines, delta = 10):
+        if lines is None:
+            return None
+        
+        # for polar coordinate system: d = r1^2 + r2^2 - 2r1r2cos(thata2 - thata1)
+        same_lines = []
+
 
 
 def main():
