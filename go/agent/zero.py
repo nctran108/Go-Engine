@@ -9,6 +9,7 @@ from keras.models import Model, model_from_json, save_model, load_model
 
 from go.encoders import get_encoder_by_name
 import json
+from tqdm import tqdm
 
 class Branch:
     def __init__(self, prior):
@@ -86,7 +87,8 @@ class ZeroAgent(Agent):
         root = self.create_node(game_state)
         #print_board(game_state.board)
 
-        for i in range(self.num_rounds): # this is the first step in a process that repeats many times per move
+        for i in tqdm(range(self.num_rounds)): # this is the first step in a process that repeats many times per move
+            #print(f'round {i}/{self.num_rounds}')
             node = root
             next_move = self.select_branch(node) # select move that have max score
             # move down to bottom of the branch
@@ -132,7 +134,7 @@ class ZeroAgent(Agent):
     def create_node(self, game_state: GameState, move=None, parent: ZeroTreeNode=None) -> ZeroTreeNode:
         state_tensor = self.encoder.encode(game_state)
         model_input = np.array([state_tensor])
-        priors, values = self.model.predict(model_input)
+        priors, values = self.model.predict(model_input,verbose=0)
 
         priors = priors[0]
         # add Dirichlet noise to the root node

@@ -60,7 +60,7 @@ def main():
     black_agent.set_collector(c1)
     white_agent.set_collector(c2)
 
-    num_games = 20
+    num_games = 1
     for i in range(num_games):
         simulate_game(board_size, black_agent, c1, white_agent, c2)
 
