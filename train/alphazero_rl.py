@@ -16,15 +16,8 @@ from networks import alphaZero
 import h5py
 import numpy as np
 
-LAST_MODEL = None
-
-black_agent = load_zero_agent('bots/19x19_zero_1600_rounds_first_games.weights.h5', json_file=True)
-white_agent = load_zero_agent('bots/19x19_zero_1600_rounds_first_games.weights.h5', json_file=True)
-
-c1 = ZeroExperienceCollector()
-c2 = ZeroExperienceCollector()
-
 game_played = 0
+CONTROL_C = False
 
 def simulate_game(
         board_size,
@@ -54,28 +47,20 @@ def simulate_game(
         white_collector.complete_episode(1)
 
 def signal_handler(sig, frame):
-    global black_agent
-    global white_agent
-    global c1
-    global c2
-    global game_played
+    global CONTROL_C
     print('CTRL-C was pressed')
-    exp = combine_zero_experience([c1, c2])
-
-    black_agent.train(exp, 0.01, 2048)
-
-    black_agent.serialize(f'bots/19x19_zero_1600_rounds_{game_played}_games.weights.h5', json_file=True)
-
-    exit(0)
+    CONTROL_C = True
 
 def main():
-    global black_agent
-    global white_agent
-    global c1
-    global c2
-    global game_played
+    global CONTROL_C
     signal.signal(signal.SIGINT, signal_handler)
     board_size = 19
+
+    black_agent = load_zero_agent('bots/19x19_zero_1600_rounds_first_games.weights.h5', json_file=True)
+    white_agent = load_zero_agent('bots/19x19_zero_1600_rounds_first_games.weights.h5', json_file=True)
+
+    c1 = ZeroExperienceCollector()
+    c2 = ZeroExperienceCollector()
     #encoder = ZeroEncoder(board_size)
 
     #model = alphaZero.model(encoder)
@@ -93,6 +78,8 @@ def main():
     for i in range(num_games):
         simulate_game(board_size, black_agent, c1, white_agent, c2)
         game_played += 1
+        if CONTROL_C:
+            break
 
     exp = combine_zero_experience([c1, c2])
 
