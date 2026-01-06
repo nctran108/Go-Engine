@@ -1,5 +1,6 @@
 import sys
 import os
+import signal
 sys.path.append(os.getcwd())
 
 import argparse
@@ -14,6 +15,16 @@ from networks import alphaZero
 
 import h5py
 import numpy as np
+
+LAST_MODEL = None
+
+black_agent = load_zero_agent('bots/19x19_zero_1600_rounds_first_games.weights.h5', json_file=True)
+white_agent = load_zero_agent('bots/19x19_zero_1600_rounds_first_games.weights.h5', json_file=True)
+
+c1 = ZeroExperienceCollector()
+c2 = ZeroExperienceCollector()
+
+game_played = 0
 
 def simulate_game(
         board_size,
@@ -42,33 +53,52 @@ def simulate_game(
         black_collector.complete_episode(-1)
         white_collector.complete_episode(1)
 
-def main():
-    board_size = 19
-    encoder = ZeroEncoder(board_size)
+def signal_handler(sig, frame):
+    global black_agent
+    global white_agent
+    global c1
+    global c2
+    global game_played
+    print('CTRL-C was pressed')
+    exp = combine_zero_experience([c1, c2])
 
-    model = alphaZero.model(encoder)
-    black_agent = ZeroAgent(model, encoder, rounds_per_move=1600, c=2.0)
-    white_agent = ZeroAgent(model, encoder, rounds_per_move=1600, c=2.0)
+    black_agent.train(exp, 0.01, 2048)
+
+    black_agent.serialize(f'bots/19x19_zero_1600_rounds_{game_played}_games.weights.h5', json_file=True)
+
+    exit(0)
+
+def main():
+    global black_agent
+    global white_agent
+    global c1
+    global c2
+    global game_played
+    signal.signal(signal.SIGINT, signal_handler)
+    board_size = 19
+    #encoder = ZeroEncoder(board_size)
+
+    #model = alphaZero.model(encoder)
+    #black_agent = ZeroAgent(model, encoder, rounds_per_move=1600, c=2.0)
+    #white_agent = ZeroAgent(model, encoder, rounds_per_move=1600, c=2.0)
 
     #print(os.getcwd())
-    #black_agent = load_zero_agent('bots/13x13_zero_1600_rounds_80_games.weights.h5', json_file=True)
-    #white_agent = load_zero_agent('bots/13x13_zero_1600_rounds_80_games.weights.h5', json_file=True)
-
-    c1 = ZeroExperienceCollector()
-    c2 = ZeroExperienceCollector()
+    
 
     black_agent.set_collector(c1)
     white_agent.set_collector(c2)
 
-    num_games = 1
+    num_games = 10
+    
     for i in range(num_games):
         simulate_game(board_size, black_agent, c1, white_agent, c2)
+        game_played += 1
 
     exp = combine_zero_experience([c1, c2])
 
     black_agent.train(exp, 0.01, 2048)
 
-    black_agent.serialize('bots/19x19_zero_1600_rounds_first_games.weights.h5', json_file=True)     
+    black_agent.serialize(f'bots/19x19_zero_1600_rounds_{game_played}_games.weights.h5', json_file=True)     
 
 if __name__ == "__main__":
     main()
