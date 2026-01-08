@@ -1,17 +1,32 @@
 import numpy as np
 import cv2
 
-def PreProcess(image):
-    # transform into gray scale
+class PreProcessImage:
+    def __init__(self, kernelSize):
+        self.ddepth = cv2.CV_64F
+        self.kernelSize = kernelSize
 
-    # Laplace operator for edge detection to reduce noices
+    def gradients(self, image_bw):
+        Ix = cv2.filter2D(image_bw.astype(np.float32), -1, self.SOBEL_X, borderType=cv2.BORDER_CONSTANT)
+        Iy = cv2.filter2D(image_bw.astype(np.float32), -1, self.SOBEL_Y, borderType=cv2.BORDER_CONSTANT)
+        return Ix, Iy
 
-    # high-pass filter
+    def process(self, image):
+        # transform into gray scale
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        # Laplace operator for edge detection to reduce noices
+        laplacian = cv2.Laplacian(gray, self.ddepth, self.kernelSize)
+        laplacian = cv2.convertScaleAbs(laplacian)
+        # high-pass filter
+        hpf = gray - cv2.GaussianBlur(gray, (self.kernelSize, self.kernelSize), 3) + 127
 
-    #return image after preprocessing
-    return
+        #return image after preprocessing
+        return hpf
 
 class BoardRecognition:
+    def __init__(self):
+        pass
+
     # the process of SGTM (Simple Geometric Transform Model)
 
     # (1) Locate coordinate of four corners and return Corner[0], Corner[1], Corner[2], Corner[3]
