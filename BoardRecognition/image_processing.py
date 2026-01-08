@@ -7,8 +7,8 @@ class PreProcessImage:
         self.kernelSize = kernelSize
 
     def gradients(self, image_bw):
-        Ix = cv2.filter2D(image_bw.astype(np.float32), -1, self.SOBEL_X, borderType=cv2.BORDER_CONSTANT)
-        Iy = cv2.filter2D(image_bw.astype(np.float32), -1, self.SOBEL_Y, borderType=cv2.BORDER_CONSTANT)
+        Ix = cv2.Sobel(image_bw, self.ddepth, 1, 0, self.kernelSize)
+        Iy = cv2.Sobel(image_bw, self.ddepth, 0, 1, self.kernelSize)
         return Ix, Iy
 
     def process(self, image):
@@ -18,8 +18,8 @@ class PreProcessImage:
         laplacian = cv2.Laplacian(gray, self.ddepth, self.kernelSize)
         laplacian = cv2.convertScaleAbs(laplacian)
         # high-pass filter
-        hpf = gray - cv2.GaussianBlur(gray, (self.kernelSize, self.kernelSize), 3) + 127
-
+        Ix, Iy = self.gradients(laplacian)
+        hpf = cv2.addWeighted(Ix, 0.5, Iy, 0.5, 0)
         #return image after preprocessing
         return hpf
 

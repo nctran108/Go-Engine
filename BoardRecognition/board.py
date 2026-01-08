@@ -11,7 +11,7 @@ class BoardRecognition:
         # pre processing
         preProcessImage = image_processing.PreProcessImage(7)
         hdr = preProcessImage.process(image)
-        plt.imshow(hdr)
+        plt.imshow(hdr, cmap="gray")
         plt.show()
 
         # board regconition
