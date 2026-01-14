@@ -6,9 +6,9 @@ class PreProcessImage:
         self.ddepth = cv2.CV_64F
         self.kernelSize = kernelSize
 
-    def gradients(self, image_bw):
-        Ix = cv2.Sobel(image_bw, self.ddepth, 1, 0, self.kernelSize)
-        Iy = cv2.Sobel(image_bw, self.ddepth, 0, 1, self.kernelSize)
+    def gradients(self, image_bw, kSize = 5):
+        Ix = cv2.Sobel(image_bw, self.ddepth, 1, 0, kSize)
+        Iy = cv2.Sobel(image_bw, self.ddepth, 0, 1, kSize)
         return Ix, Iy
 
     def process(self, image):
@@ -16,9 +16,9 @@ class PreProcessImage:
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         # Laplace operator for edge detection to reduce noices
         laplacian = cv2.Laplacian(gray, self.ddepth, self.kernelSize)
-        laplacian = cv2.convertScaleAbs(laplacian)
+        #laplacian = cv2.convertScaleAbs(laplacian)
         # high-pass filter
-        Ix, Iy = self.gradients(laplacian)
+        Ix, Iy = self.gradients(laplacian,7)
         hpf = cv2.addWeighted(Ix, 0.5, Iy, 0.5, 0)
         #return image after preprocessing
         return hpf
@@ -53,6 +53,9 @@ class BoardRecognition:
     # identify the 19 horizontal lines
 
     # (8) find 361 interections of go-board base on 19x19 lines
+    def process(self, image):
+        lines = cv2.HoughLines(image.astype(np.uint8), 400, np.pi / 180, 150)
+        return image, lines
 
 
 class PieceRecognition:
