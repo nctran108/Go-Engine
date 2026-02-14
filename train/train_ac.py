@@ -1,4 +1,8 @@
 import sys
+import os
+sys.path.append(os.getcwd())
+
+import sys
 sys.path.append('d:\\study\\Go-Engine')
 sys.path.append('d:\study\Go-Engine\go\RL')
 import argparse

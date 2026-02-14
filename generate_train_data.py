@@ -12,13 +12,15 @@ def generate_train_sample(num_games=1000):
     processor.map_to_workers('train', samples)
     processor.load_data_from_npy('train')
 
-def generate_test_sample():
+def generate_test_sample(num_games=100):
+    samples = processor.generate_samples('test', num_games)
+    processor.map_to_workers('test', samples)
     processor.load_data_from_npy('test')
 
 def main():
     num_games = 1000
     # generate train
-    generate_train_sample(num_games)
+    # generate_train_sample(num_games)
     # generate test
     generate_test_sample()
 
