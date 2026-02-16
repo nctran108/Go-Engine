@@ -58,7 +58,7 @@ if __name__ == '__main__':
     print('Test accuracy:', score[1])
 
     deep_learning_bot = DeepLearningAgent(model, encoder)
-    h5file = h5py.File("./bot/deep_bot.h5", 'w')
+    h5file = h5py.File("./bots/deep_bot.h5", 'w')
     deep_learning_bot.serialize(h5file)
 
     

@@ -19,7 +19,7 @@ def generate_test_sample(num_games=100):
     processor.load_data_from_npy('test')
 
 def main():
-    num_games = 100
+    num_games = 1000
     # generate train
     generate_train_sample(num_games)
     # generate test
