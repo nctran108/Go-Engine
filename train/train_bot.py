@@ -18,8 +18,8 @@ if __name__ == '__main__':
     encoder = SevenPlaneEncoder((board_size,board_size))
     processor = GoDataProcessor(encoder=encoder.name())
 
-    features = np.load('go/data/raw/features_train.npy')
-    labels = np.load('go/data/raw/labels_train.npy')
+    features = np.load('go/data/process/features_train.npy')
+    labels = np.load('go/data/process/labels_train.npy')
 
     random_indices = np.random.randint(0, 5000, size=1000)
 
@@ -58,7 +58,7 @@ if __name__ == '__main__':
     print('Test accuracy:', score[1])
 
     deep_learning_bot = DeepLearningAgent(model, encoder)
-    h5file = h5py.File("./go/agent/deep_bot.h5", 'w')
+    h5file = h5py.File("./bot/deep_bot.h5", 'w')
     deep_learning_bot.serialize(h5file)
 
     
