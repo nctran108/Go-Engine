@@ -48,6 +48,7 @@ def signal_handler(sig, frame):
     global CONTROL_C
     print('CTRL-C was pressed')
     CONTROL_C = True
+    exit
 
 def main():
     global CONTROL_C
@@ -91,19 +92,23 @@ def main():
     black_agent.set_collector(c1)
     white_agent.set_collector(c2)
 
+    number_train = 200
     num_games = 5
     
-    for i in range(num_games):
-        simulate_game(board_size, black_agent, c1, white_agent, c2)
-        game_played += 1
+    for i in range(number_train):
+        for i in range(num_games):
+            simulate_game(board_size, black_agent, c1, white_agent, c2)
+            game_played += 1
+            if CONTROL_C:
+                break
+
+        exp = combine_zero_experience([c1, c2])
+
+        black_agent.train(exp, 0.01, 2048)
+
+        black_agent.serialize(f'bots/zero_demo_{board_size}x{board_size}_{game_played}_games_{rounds}.weights.h5', json_file=True) 
         if CONTROL_C:
-            break
-
-    exp = combine_zero_experience([c1, c2])
-
-    black_agent.train(exp, 0.01, 2048)
-
-    black_agent.serialize(f'bots/zero_demo_{board_size}x{board_size}_{game_played}_games_{rounds}.weights.h5', json_file=True)     
+            break    
 
 if __name__ == "__main__":
     main()
