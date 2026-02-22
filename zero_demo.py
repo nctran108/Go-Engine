@@ -106,7 +106,7 @@ def main():
 
         black_agent.train(exp, 0.01, 2048)
 
-        black_agent.serialize(f'bots/zero_demo_{board_size}x{board_size}_{game_played}_games_{rounds}.weights.h5', json_file=True) 
+        black_agent.serialize(f'bots/zero_demo_{board_size}x{board_size}_{game_played}_games_{rounds}_weights.h5', json_file=True) 
         if CONTROL_C:
             break    
 
