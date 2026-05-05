@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.append(os.getcwd())
+
 import subprocess
 import re
 import h5py
@@ -29,9 +33,9 @@ class LocalGtpBot:
     @staticmethod
     def opponent_cmd(opponent: str):
         if opponent == 'gnugo':
-            return ["./gnugo-3.8/gnugo.exe", "--mode", "gtp"]
+            return ["gnugo", "--mode", "gtp"]
         elif opponent == 'pachi':
-            return ["./pachi-5.00/zzgo.exe"]
+            return ["./pachi-5.00/zzgo"]
         else:
             raise ValueError("Unknown bot name {}".format(opponent))
         
