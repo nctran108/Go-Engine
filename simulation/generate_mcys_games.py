@@ -1,3 +1,7 @@
+import sys
+import os
+sys.path.append(os.getcwd())
+
 import argparse
 import numpy as np
 
@@ -42,7 +46,7 @@ def generate_game(board_size, rounds, max_moves, temerature):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--board-size', '-b', type=int, default=9)
+    parser.add_argument('--board-size', '-b', type=int, default=19)
     parser.add_argument('--rounds', '-r', type=int, default=1000)
     parser.add_argument('--temperature', '-t', type=float, default=0.8)
     parser.add_argument('--max-moves', '-m', type=int, default=60, help='Max moves per game.')

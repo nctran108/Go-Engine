@@ -199,7 +199,7 @@ class GoDataProcessor:
                 indices_by_zip_name[filename] = []
             indices_by_zip_name[filename].append(index)
         
-        cores = 6  # Determine number of CPU cores and split work load among them
+        cores = 8  # Determine number of CPU cores and split work load among them
         zips_to_process = []
         for i, zip_name in enumerate(zip_names):
             base_name = zip_name.replace('.tar.gz', '')

@@ -121,7 +121,7 @@ class LocalGtpBot:
 
 
 if __name__ == "__main__":
-    bot = load_prediction_agent(h5py.File("./go/agent/deep_bot.h5", 'r'))
+    bot = load_prediction_agent(h5py.File("./bots/zero_demo_9x9_5_games_1600.weights.h5", 'r'))
     gnu_go = LocalGtpBot(go_bot=bot, termination=PassWhenOpponentPasses(),
                          handicap=0, opponent='gnugo')
     gnu_go.run()

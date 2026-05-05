@@ -1,4 +1,5 @@
 import numpy as np
+import os
 
 from keras.optimizers import SGD
 from go.agent.base import Agent
