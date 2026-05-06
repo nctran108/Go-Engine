@@ -5,7 +5,7 @@ import tarfile
 import gzip
 import shutil
 import numpy as np
-from multiprocessing import Pool, RLock, current_process, freeze_support
+from multiprocessing import Pool, RLock, current_process, freeze_support, cpu_count
 import time
 from keras.utils import to_categorical
 from tqdm import tqdm
@@ -32,28 +32,30 @@ class GoDataProcessor:
         self.encoder_string = encoder
         self.encoder = get_encoder_by_name(encoder, 19)
         self.data_dir = os.getcwd() + '/go/' + data_directory
+        self.num_samples = 0
 
     def generate_samples(self, data_type='train', num_samples=1000):
+        self.num_samples = num_samples
         index = KGSIndex(data_directory=self.data_dir)
         index.download_files()
         
-        print("start sampler.....")
+        print("[processor][generator] start sampler.....")
         sampler = Sampler(data_dir=self.data_dir,index=index)
         data = sampler.draw_data(data_type, num_samples)
-        print("data drawed....")
+        print("[processor][generator] data drawed....")
         return data
 
 # tag::load_generator[]
     def load_go_data(self, data_type='train', num_samples=1000,
                      use_generator=False):
-        
+        self.num_samples = num_samples
         index = KGSIndex(data_directory=self.data_dir)
         index.download_files()
         
-        print("start sampler.....")
+        print("[processor][load_data] start sampler.....")
         sampler = Sampler(data_dir=self.data_dir,index=index)
         data = sampler.draw_data(data_type, num_samples)
-        print("data drawed....")
+        print("[processor][load_data] data drawed....")
 
         self.map_to_workers(data_type, data)  # <1>
         if use_generator:
@@ -69,13 +71,10 @@ class GoDataProcessor:
 # end::load_generator[]
 
     def unzip_data(self, zip_file_name):
-        this_gz = gzip.open(self.data_dir + '/' + zip_file_name)
-
-        tar_file = zip_file_name[0:-3]
-        this_tar = open(self.data_dir + '/' + tar_file, 'wb')
-
-        shutil.copyfileobj(this_gz, this_tar)
-        this_tar.close()
+        tar_file = zip_file_name[:-3]
+        with gzip.open(self.data_dir + '/' + zip_file_name, 'rb') as this_gz, \
+                open(self.data_dir + '/' + tar_file, 'wb') as this_tar:
+            shutil.copyfileobj(this_gz, this_tar)
         return tar_file
 
     def process_zip(self, i, zip_file_name, data_file_name, game_list):
@@ -83,65 +82,80 @@ class GoDataProcessor:
         tqdm_text = "[pid " + "{}".format(pid).zfill(3) + ']'
 
         tar_file = self.unzip_data(zip_file_name)
-        zip_file = tarfile.open(self.data_dir + '/' + tar_file)
-        name_list = zip_file.getnames()
-        total_examples = self.num_total_examples(zip_file, game_list, name_list)
-        shape = self.encoder.shape()
-        feature_shape = np.insert(shape, 0, np.asarray([total_examples]))
-        features = np.zeros(feature_shape)
-        labels = np.zeros((total_examples,))
+        with tarfile.open(self.data_dir + '/' + tar_file) as zip_file:
+            name_list = zip_file.getnames()
+            total_examples = self.num_total_examples(zip_file, game_list, name_list)
+            shape = self.encoder.shape()
+            feature_shape = np.insert(shape, 0, np.asarray([total_examples]))
+            features = np.zeros(feature_shape)
+            labels = np.zeros((total_examples,))
 
-        counter = 0
-        # switch leave back to False if want to remove the bar after finish
-        with tqdm(range(total_examples), desc=tqdm_text, position=i,leave=True) as process:
-            for index in game_list:
-                name = name_list[index + 1]
-                if not name.endswith('.sgf'):
-                    raise ValueError(name + ' is not a valid sgf')
-                sgf_content = zip_file.extractfile(name).read()
-                sgf = Sgf_game.from_string(sgf_content.decode('utf-8'))
-                
-                game_state, first_move_done = self.get_handicap(sgf)
+            counter = 0
+            # hide the finished processing bar and start a save bar in the same position
+            with tqdm(range(total_examples), desc=tqdm_text, position=i, leave=False) as process:
+                for index in game_list:
+                    name = name_list[index + 1]
+                    if not name.endswith('.sgf'):
+                        raise ValueError(name + ' is not a valid sgf')
+                    sgf_content = zip_file.extractfile(name).read()
+                    sgf = Sgf_game.from_string(sgf_content.decode('utf-8'))
+                    
+                    game_state, first_move_done = self.get_handicap(sgf)
 
-                for item in sgf.main_sequence_iter():
-                    color, move_tuple = item.get_move()
-                    point = None
-                    move = None
-                    if color is not None:
-                        if move_tuple is not None:
-                            row, col = move_tuple
-                            point = Point(row + 1, col + 1)
-                            move = Move.play(point)
-                        else:
-                            move = Move.pass_turn()
-                        if first_move_done and point is not None:
-                            features[counter] = self.encoder.encode(game_state)
-                            labels[counter] = self.encoder.encode_point(point)
-                            counter += 1
-                            process.update(1) ## update bar
-                            #process.refresh()
-                        game_state = game_state.apply_move(move)
-                        first_move_done = True
-                    #print(counter,end='\r')
-            #process.clear()
-            #process.close()
+                    for item in sgf.main_sequence_iter():
+                        color, move_tuple = item.get_move()
+                        point = None
+                        move = None
+                        if color is not None:
+                            if move_tuple is not None:
+                                row, col = move_tuple
+                                point = Point(row + 1, col + 1)
+                                move = Move.play(point)
+                            else:
+                                move = Move.pass_turn()
+                            if first_move_done and point is not None:
+                                features[counter] = self.encoder.encode(game_state)
+                                labels[counter] = self.encoder.encode_point(point)
+                                counter += 1
+                                process.update(1) ## update bar
+                            game_state = game_state.apply_move(move)
+                            first_move_done = True
 
+        save_desc = f"{tqdm_text} saving"
         feature_file_base = self.data_dir + '/' + data_file_name + '_features_%d'
         label_file_base = self.data_dir + '/' + data_file_name + '_labels_%d'
         chunk = 0  # Due to files with large content, split up after chunksize
         chunksize = 1024
-        while features.shape[0] >= chunksize:
-            feature_file = feature_file_base % chunk
-            label_file = label_file_base % chunk
-            chunk += 1
-            current_features, features = features[:chunksize], features[chunksize:]
-            current_labels, labels = labels[:chunksize], labels[chunksize:]
-            np.save(feature_file, current_features)
-            np.save(label_file, current_labels)
+        total_save_chunks = features.shape[0] // chunksize
+        if total_save_chunks > 0:
+            with tqdm(total=total_save_chunks, desc=save_desc, position=i, leave=False) as save_process:
+                while features.shape[0] >= chunksize:
+                    feature_file = feature_file_base % chunk
+                    label_file = label_file_base % chunk
+                    chunk += 1
+                    current_features, features = features[:chunksize], features[chunksize:]
+                    current_labels, labels = labels[:chunksize], labels[chunksize:]
+                    np.save(feature_file, current_features)
+                    np.save(label_file, current_labels)
+                    save_process.update(1)
+        else:
+            while features.shape[0] >= chunksize:
+                feature_file = feature_file_base % chunk
+                label_file = label_file_base % chunk
+                chunk += 1
+                current_features, features = features[:chunksize], features[chunksize:]
+                current_labels, labels = labels[:chunksize], labels[chunksize:]
+                np.save(feature_file, current_features)
+                np.save(label_file, current_labels)
+
+        # explicit cleanup after saving
+        zip_file.close()
+        os.remove(self.data_dir + '/' + tar_file)
+        print(f"[processor][process_zip_file] finished processing {zip_file_name}")
         
 
     def consolidate_games(self, name, samples):
-        print('Start consoldate games.....')
+        print('[processor][consolidate] Start consoldate games.....')
         files_needed = set(file_name for file_name, index in samples)
         file_names = []
         for zip_file_name in files_needed:
@@ -167,10 +181,10 @@ class GoDataProcessor:
 
         feature_file = self.data_dir + '/features_' + name
         label_file = self.data_dir + '/labels_' + name
-        print('start saving.....')
+        print('[processor][consolidate] start saving.....')
         np.save(feature_file, features)
         np.save(label_file, labels)
-        print('data stored......')
+        print('[processor][consolidate] data stored......')
 
         return features, labels
 
@@ -199,7 +213,7 @@ class GoDataProcessor:
                 indices_by_zip_name[filename] = []
             indices_by_zip_name[filename].append(index)
         
-        cores = 8  # Determine number of CPU cores and split work load among them
+    
         zips_to_process = []
         for i, zip_name in enumerate(zip_names):
             base_name = zip_name.replace('.tar.gz', '')
@@ -208,23 +222,21 @@ class GoDataProcessor:
                 zips_to_process.append((i,self.__class__, self.encoder_string, zip_name,
                                         data_file_name, indices_by_zip_name[zip_name]))
         
-        pool = Pool(cores, initargs=(RLock(),),initializer=tqdm.set_lock)
+        cores = min(self.num_samples, cpu_count())  # Determine number of CPU cores and split work load among them
+        pool = Pool(cores, initargs=(RLock(),), initializer=tqdm.set_lock)
 
         p = pool.map_async(worker, zips_to_process)
-
         try:
             #async_results = [pool.apply_async(worker, (zip_to_process,)) for zip_to_process in zips_to_process]
             p.get()
-
-            # Important to print these blanks
-            print("\n" * (len(zips_to_process) + 1))
-                
+            pool.close()
+            pool.join()
         except (KeyboardInterrupt, TimeoutError, Exception) as e:  # Caught keyboard interrupt, terminating workers
             pool.terminate()
             pool.join()
-            print("Error")
-            print(type(e))
-            print(e)
+            print("[processor][map_to_workers] Error")
+            print("[processor][map_to_workers] " + str(type(e)))
+            print("[processor][map_to_workers] " + str(e))
             exit(-1)
 
 
@@ -250,7 +262,7 @@ class GoDataProcessor:
         return total_examples
     
     def load_data_from_npy(self, data_type):
-        print('loading npy data....')
+        print('[processor][load_data_from_npy] loading npy data....')
         feature_list = []
         label_list = []
         base =  self.data_dir + '/' + '*' + '_features_*.npy'
@@ -271,9 +283,9 @@ class GoDataProcessor:
 
         feature_file = os.getcwd() + "/go/data/process" + '/features_' + data_type
         label_file = os.getcwd() + "/go/data/process" + '/labels_' + data_type
-        print('start saving.....')
+        print('[processor][load_data_from_npy] start saving.....')
         np.save(feature_file, features)
         np.save(label_file, labels)
-        print('data stored......')
+        print('[processor][load_data_from_npy] data stored......')
 
         return features, labels

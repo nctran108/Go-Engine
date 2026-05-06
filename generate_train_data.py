@@ -5,7 +5,7 @@ from multiprocessing import freeze_support
 import numpy as np
 
 rows, cols = 19, 19
-encoder = SevenPlaneEncoder((rows,cols))
+encoder = AlphaGoEncoder((rows,cols))
 processor = GoDataProcessor(encoder=encoder.name())
 
 def generate_train_sample(num_games=1000):
@@ -19,11 +19,11 @@ def generate_test_sample(num_games=100):
     processor.load_data_from_npy('test')
 
 def main():
-    num_games = 1000
+    num_games = 10000
     # generate train
     generate_train_sample(num_games)
     # generate test
-    #generate_test_sample()
+    generate_test_sample(num_games)
 
 if __name__ == '__main__':
     freeze_support() # support window

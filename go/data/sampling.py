@@ -44,14 +44,14 @@ class Sampler:
             num_games = fileinfo['num_games']
             for i in range(num_games):
                 available_games.append((filename, i))
-        print('>>> Total number of games used: ' + str(len(available_games)))
+        print('[sampling][draw samples] >>> Total number of games used: ' + str(len(available_games)))
 
         sample_set = set()
         while len(sample_set) < num_sample_games:
             sample = random.choice(available_games)
             if sample not in sample_set:
                 sample_set.add(sample)
-        print('Drawn ' + str(num_sample_games) + ' samples:')
+        print('[sampling][draw samples] Drawn ' + str(num_sample_games) + ' samples:')
         return list(sample_set)
 
     def draw_training_games(self):
@@ -69,7 +69,7 @@ class Sampler:
                 sample = (filename, i)
                 if sample not in self.test_games:
                     self.train_games.append(sample)
-        print('total num training games: ' + str(len(self.train_games)))
+        print('[sampling][draw training non-test] total num training games: ' + str(len(self.train_games)))
 
     def compute_test_samples(self):
         """If not already existing, create local file to store fixed set of test samples"""
@@ -100,14 +100,14 @@ class Sampler:
             num_games = fileinfo['num_games']
             for i in range(num_games):
                 available_games.append((filename, i))
-        print('total num games: ' + str(len(available_games)))
+        print('[sampling][draw training] total num games: ' + str(len(available_games)))
 
         sample_set = set()
         while len(sample_set) < num_sample_games:
             sample = random.choice(available_games)
             if sample not in self.test_games:
                 sample_set.add(sample)
-        print('Drawn ' + str(num_sample_games) + ' samples:')
+        print('[sampling][draw training] Drawn ' + str(num_sample_games) + ' samples:')
         return list(sample_set)
 
     def draw_all_training(self):
@@ -126,11 +126,11 @@ class Sampler:
                 continue
             for i in range(num_games):
                 available_games.append((filename, i))
-        print('total num games: ' + str(len(available_games)))
+        print('[sampling][draw all] total num games: ' + str(len(available_games)))
 
         sample_set = set()
         for sample in available_games:
             if sample not in self.test_games:
                 sample_set.add(sample)
-        print('Drawn all samples, ie ' + str(len(sample_set)) + ' samples:')
+        print('[sampling][draw all] Drawn all samples, ie ' + str(len(sample_set)) + ' samples:')
         return list(sample_set)

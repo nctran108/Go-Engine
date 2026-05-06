@@ -8,6 +8,7 @@ def alphago_model(input_shape, is_policy_net=False,
                   first_kernel_size=5,
                   other_kernel_size=3):
     model = Sequential()
+    print("[alphago_model] Building model with input shape: " + str(input_shape))
     # input 19x19 layer, and output is 192 which is 19x19
     # with kernel size is 5 and keep the padding with same size for other layers
     model.add(Conv2D(num_filters,first_kernel_size,input_shape=input_shape,padding='same',data_format='channels_first',activation='relu'))
