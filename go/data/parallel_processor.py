@@ -148,10 +148,17 @@ class GoDataProcessor:
                 np.save(feature_file, current_features)
                 np.save(label_file, current_labels)
 
+        # Save any remaining data that didn't fill a full chunk
+        if features.shape[0] > 0:
+            feature_file = feature_file_base % chunk
+            label_file = label_file_base % chunk
+            np.save(feature_file, features)
+            np.save(label_file, labels)
+
         # explicit cleanup after saving
         zip_file.close()
-        os.remove(self.data_dir + '/' + tar_file)
-        print(f"[processor][process_zip_file] finished processing {zip_file_name}")
+        #os.remove(self.data_dir + '/' + tar_file)
+        #print(f"[processor][process_zip_file] finished processing {zip_file_name}")
         
 
     def consolidate_games(self, name, samples):
@@ -222,7 +229,7 @@ class GoDataProcessor:
                 zips_to_process.append((i,self.__class__, self.encoder_string, zip_name,
                                         data_file_name, indices_by_zip_name[zip_name]))
         
-        cores = min(self.num_samples, cpu_count())  # Determine number of CPU cores and split work load among them
+        cores = 8  # Determine number of CPU cores and split work load among them
         pool = Pool(cores, initargs=(RLock(),), initializer=tqdm.set_lock)
 
         p = pool.map_async(worker, zips_to_process)
@@ -274,6 +281,9 @@ class GoDataProcessor:
                 y = to_categorical(y.astype(int), 19 * 19)
                 feature_list.append(x)
                 label_list.append(y)
+
+        if not feature_list:
+            raise ValueError(f"No processed data files found in {self.data_dir}. Please run data processing first to generate the .npy files.")
 
         features = np.concatenate(feature_list, axis=0)
         labels = np.concatenate(label_list, axis=0)
