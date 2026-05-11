@@ -19,11 +19,11 @@ def generate_test_sample(num_games=100):
     processor.load_data_from_npy('test')
 
 def main():
-    num_games = 10
+    num_games = 1000
     # generate train
-    #generate_train_sample(num_games)
+    generate_train_sample(num_games)
     # generate test
-    generate_test_sample(num_games)
+    #generate_test_sample(num_games)
 
 if __name__ == '__main__':
     freeze_support() # support window

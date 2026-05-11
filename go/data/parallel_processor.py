@@ -272,7 +272,7 @@ class GoDataProcessor:
         print('[processor][load_data_from_npy] loading npy data....')
         feature_list = []
         label_list = []
-        base =  self.data_dir + '/' + '*' + '_features_*.npy'
+        base = self.data_dir + '/' + '*_' + data_type + '_features_*.npy'
         for feature_file in tqdm(glob.glob(base)):
                 label_file = feature_file.replace('features', 'labels')
                 x = np.load(feature_file)
@@ -283,16 +283,17 @@ class GoDataProcessor:
                 label_list.append(y)
 
         if not feature_list:
-            raise ValueError(f"No processed data files found in {self.data_dir}. Please run data processing first to generate the .npy files.")
+            raise ValueError(f"No processed data files found for '{data_type}' in {self.data_dir}. Please run data processing first to generate the .npy files.")
 
         features = np.concatenate(feature_list, axis=0)
         labels = np.concatenate(label_list, axis=0)
 
-        if not os.path.isdir(os.getcwd() + "/go/data/process"):
-            os.makedirs(os.getcwd() + "/go/data/process")
+        process_dir = os.getcwd() + "/go/data/process"
+        if not os.path.isdir(process_dir):
+            os.makedirs(process_dir)
 
-        feature_file = os.getcwd() + "/go/data/process" + '/features_' + data_type
-        label_file = os.getcwd() + "/go/data/process" + '/labels_' + data_type
+        feature_file = process_dir + '/features_' + data_type
+        label_file = process_dir + '/labels_' + data_type
         print('[processor][load_data_from_npy] start saving.....')
         np.save(feature_file, features)
         np.save(label_file, labels)

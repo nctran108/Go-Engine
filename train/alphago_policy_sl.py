@@ -27,11 +27,11 @@ features = np.load('./go/data/process/features_train.npy')
 labels = np.load('./go/data/process/labels_train.npy')
 print("[alphago_policy_sl]" + str(features.shape))
 
-randon_index = np.random.randint(0, features.shape[0], 50000)
+randon_index = np.random.randint(0, features.shape[0], 5000)
 
 X = features[randon_index]
 y = labels[randon_index]
-randon_index = np.random.randint(0, features.shape[0], 50000)
+randon_index = np.random.randint(0, features.shape[0], 5000)
 
 test_X = features[randon_index]
 test_y = labels[randon_index]
@@ -57,7 +57,7 @@ alphago_sl_policy.fit(X,y, batch_size=batch_size,
               epochs=epochs,
               verbose=1,
               validation_data=(test_X,test_y),
-              callbacks=[ModelCheckpoint('/checkpoints/alphago_sl_policy_{epoch}.keras')])
+              callbacks=[ModelCheckpoint('checkpoints/alphago_sl_policy_{epoch}.h5')])
 
 alphago_sl_agent = DeepLearningAgent(alphago_sl_policy, encoder)
 
