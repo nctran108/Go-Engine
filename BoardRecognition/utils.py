@@ -1,6 +1,9 @@
+import os
+
 import cv2
 from matplotlib import pyplot as plt
 import numpy as np
+import math
 
 
 def visulization(images = None, title=None):
@@ -25,3 +28,32 @@ def visulization(images = None, title=None):
         if title:
             plt.title(title)
         plt.show()
+
+def writeImage(image, name):
+    path = "./data/result"
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+    cv2.imwrite(os.path.join(path,name), image.astype(np.uint8))
+
+def writeImageWithLines(image, lines, name):
+    path = "./data/result"
+    output = image.copy()
+<<<<<<< HEAD
+    output = cv2.cvtColor(output.astype(np.uint8), cv2.COLOR_GRAY2BGR)
+=======
+>>>>>>> 2f3b45b75c610909f2e9962d29027987a6dd4b96
+    if not os.path.exists(path):
+        os.makedirs(path)
+    if lines is not None:
+        for r_theta in lines:
+            arr = np.array(r_theta[0], dtype=np.float64)
+            rho , theta = arr
+            a = math.cos(theta)
+            b = math.sin(theta)
+            x0 = a * rho
+            y0 = b * rho
+            pt1 = (int(x0 + 1000 * (-b)), int(y0 + 1000 * (a)))
+            pt2 = (int(x0 - 1000 * (-b)), int(y0 - 1000 * (a)))
+            cv2.line(output, pt1, pt2, (0, 0, 255), 3, cv2.LINE_AA)
+    cv2.imwrite(os.path.join(path, name), img= output.astype(np.uint8))
