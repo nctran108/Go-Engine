@@ -1,6 +1,5 @@
 import numpy as np
 import cv2
-import matplotlib.pyplot as plt
 import utils
 
 class PreProcessImage:
@@ -18,7 +17,6 @@ class PreProcessImage:
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY).astype(np.float64)
 
         # Laplace operator for edge detection to reduce noices
-<<<<<<< HEAD
         laplacian = cv2.filter2D(gray,self.ddepth,self.laplace_kernal, borderType=cv2.BORDER_REFLECT)
         utils.writeImage(laplacian,"laplace.png")
 
@@ -33,7 +31,7 @@ class PreProcessImage:
         utils.writeImage(high_pass,"high_pass.png")
         #return image after preprocessing
         return high_pass.astype(np.uint8)
-=======
+
         laplacian = cv2.filter2D(gray,-1,self.laplace_kernal, borderType=cv2.BORDER_REFLECT)
         utils.writeImage(laplacian,"laplace.png")
 
@@ -42,7 +40,6 @@ class PreProcessImage:
         utils.writeImage(hpf,"hpf.png")
         #return image after preprocessing
         return hpf.astype(np.uint8)
->>>>>>> 2f3b45b75c610909f2e9962d29027987a6dd4b96
 
 class BoardRecognition:
     def __init__(self):
