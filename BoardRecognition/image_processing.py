@@ -16,39 +16,34 @@ class PreProcessImage:
         # transform into gray scale
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY).astype(np.float64)
 
+        # The Laplacian of Gaussian (LoG) Method
+        blurred = cv2.GaussianBlur(gray, (5, 5), 3)
+        utils.writeImage(blurred, "blurred.png")
+
         # Laplace operator for edge detection to reduce noices
-        laplacian = cv2.filter2D(gray,self.ddepth,self.laplace_kernal, borderType=cv2.BORDER_REFLECT)
-        utils.writeImage(laplacian,"laplace.png")
+        laplacian = cv2.filter2D(blurred, self.ddepth, self.laplace_kernal, borderType=cv2.BORDER_REFLECT)
+        utils.writeImage(laplacian, "laplace.png")
 
-        # high-pass filter
-        hpf = cv2.filter2D(laplacian,self.ddepth,self.kernal,borderType=cv2.BORDER_REFLECT)
-        utils.writeImage(hpf,"hpf.png")
-
-        blurred = cv2.GaussianBlur(laplacian,(21,21),3)
-        utils.writeImage(blurred,"blurred.png")
-
-        high_pass = laplacian - blurred + 127
-        utils.writeImage(high_pass,"high_pass.png")
         #return image after preprocessing
-        return high_pass.astype(np.uint8)
-
-        laplacian = cv2.filter2D(gray,-1,self.laplace_kernal, borderType=cv2.BORDER_REFLECT)
-        utils.writeImage(laplacian,"laplace.png")
-
-        # high-pass filter
-        hpf = cv2.filter2D(laplacian,-1,self.kernal,borderType=cv2.BORDER_REFLECT)
-        utils.writeImage(hpf,"hpf.png")
-        #return image after preprocessing
-        return hpf.astype(np.uint8)
-
+        return laplacian.astype(np.uint8)
+        
 class BoardRecognition:
     def __init__(self):
         pass
 
     def findFourCorners(self, img):
-        lines = cv2.HoughLines(img,1, np.pi/180,2000)
-        utils.writeImageWithLines(img,lines,"find four corners lines.png")
-        pass
+        ### tried HoughLines but not work well but use HoughlineP is work better, do not know why
+        # lines = cv2.HoughLines(img,1, np.pi/180.0,200)
+        # utils.writeImageWithLines(img,lines,"find four corners lines.png")
+
+        # find lines
+        lines = cv2.HoughLinesP(img,1, np.pi/180.0,150,minLineLength=100,maxLineGap=10)
+        utils.writeImageWithLineSegments(img,lines,"find four corners line using points.png")
+
+        corners = []
+        # find coners
+
+        return corners
 
     def findCentral(self, corners):
         pass
