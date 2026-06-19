@@ -1,21 +1,29 @@
+import sys
+import os
+sys.path.append(os.getcwd())
+
 from go.agent.policy import PolicyAgent
 from go.agent.predict import load_prediction_agent
-from go.encoders.alphago import AlphaGoEncoder
 from go.RL.simulate import experience_simulation
 import h5py
-
-encoder = AlphaGoEncoder()
 
 sl_agent = load_prediction_agent(h5py.File('alphago_sl_policy.h5'))
 sl_opponent = load_prediction_agent(h5py.File('alphago_sl_policy.h5'))
 
-alphago_rl_agent = PolicyAgent(sl_agent.model, encoder)
-opponent = PolicyAgent(sl_opponent.model,encoder)
+alphago_rl_agent = PolicyAgent(sl_agent.model, sl_agent.encoder)
+opponent = PolicyAgent(sl_opponent.model, sl_opponent.encoder)
 
-num_game = 1000
-experience = experience_simulation(num_game, alphago_rl_agent, opponent)
+num_games = 10000
+game = 0
+while game < num_games:
+    experience = experience_simulation(num_games, alphago_rl_agent, opponent)
 
-alphago_rl_agent.train(experience)
+    alphago_rl_agent.train(experience)
+    game += 1
+    if game % 10 == 0:
+        print(f'Completed {game} games')
+        with h5py.File('rl_agents/alphago_rl_policy_{game}_games.h5', 'w') as rl_agent_out:
+            alphago_rl_agent.serialize(rl_agent_out)
 
 with h5py.File('alphago_rl_policy.h5', 'w') as rl_agent_out:
     alphago_rl_agent.serialize(rl_agent_out)

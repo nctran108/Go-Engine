@@ -39,6 +39,7 @@ def experience_simulation(num_games, agent1, agent2):
 
     color1 = Player.black
     for i in tqdm(range(num_games)):
+        print(f'Simulating game {i + 1} of {num_games}')
         collector1.begin_episode()
         agent1.set_collector(collector1)
         collector2.begin_episode()

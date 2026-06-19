@@ -224,8 +224,9 @@ class GoDataProcessor:
         zips_to_process = []
         for i, zip_name in enumerate(zip_names):
             base_name = zip_name.replace('.tar.gz', '')
-            data_file_name = base_name + data_type
-            if not os.path.isfile(self.data_dir + '/' + data_file_name):
+            data_file_name = base_name + '-' + data_type
+            existing_shards = glob.glob(self.data_dir + '/' + data_file_name + '_features_*.npy')
+            if not existing_shards:
                 zips_to_process.append((i,self.__class__, self.encoder_string, zip_name,
                                         data_file_name, indices_by_zip_name[zip_name]))
         
@@ -272,7 +273,7 @@ class GoDataProcessor:
         print('[processor][load_data_from_npy] loading npy data....')
         feature_list = []
         label_list = []
-        base = self.data_dir + '/' + '*_' + data_type + '_features_*.npy'
+        base = self.data_dir + '/' + '*[-_]' + data_type + '_features_*.npy'
         for feature_file in tqdm(glob.glob(base)):
                 label_file = feature_file.replace('features', 'labels')
                 x = np.load(feature_file)
