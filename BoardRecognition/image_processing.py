@@ -37,11 +37,19 @@ class BoardRecognition:
         # utils.writeImageWithLines(img,lines,"find four corners lines.png")
 
         # find lines
-        lines = cv2.HoughLinesP(img,1, np.pi/180.0,150,minLineLength=100,maxLineGap=10)
+        lines = cv2.HoughLinesP(img,1, np.pi/180.0,200,minLineLength=100,maxLineGap=10)
         utils.writeImageWithLineSegments(img,lines,"find four corners line using points.png")
 
         corners = []
-        # find coners
+        # find horizontal lines
+
+        # find verticle lines
+
+        # find unique lines for both verticle and horizontal
+
+        # remove lines not in the board
+
+        # find 4 coners
 
         return corners
 

@@ -73,3 +73,17 @@ def writeImageWithLineSegments(image, lines, name):
             cv2.line(output, (x1, y1), (x2, y2), (0, 0, 255), 3, cv2.LINE_AA)
 
     cv2.imwrite(os.path.join(path, name), img=output)
+
+def writeImageWithPoints(image, points, name):
+    path = "./data/result"
+    output = image.copy()
+    if len(output.shape) == 2:
+        output = cv2.cvtColor(output.astype(np.uint8), cv2.COLOR_GRAY2BGR)
+
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+    for point in points:
+        cv2.circle(output, point[0], radius=5, color=(0, 255, 0), thickness=-1)
+
+    cv2.imwrite(os.path.join(path, name), img= output)
