@@ -71,7 +71,7 @@ class PolicyAgent(Agent):
         # if fall through here, there are no reasonable moves left.
         return goboard.Move.pass_turn()
     
-    def train(self, experience, learning_rate, clipnorm, batch_size):
+    def train(self, experience, learning_rate=1e-7, clipnorm=1.0, batch_size=512):
         self._model.compile(loss='categorical_crossentropy',
                             optimizer=SGD(lr=learning_rate, clipnorm=clipnorm))
         
