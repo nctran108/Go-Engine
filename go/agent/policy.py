@@ -73,7 +73,7 @@ class PolicyAgent(Agent):
     
     def train(self, experience, learning_rate=1e-7, clipnorm=1.0, batch_size=512):
         self._model.compile(loss='categorical_crossentropy',
-                            optimizer=SGD(lr=learning_rate, clipnorm=clipnorm))
+                            optimizer=SGD(learning_rate=learning_rate, clipnorm=clipnorm))
         
         experience_size = experience.states.shape[0]
         num_moves = self._encoder.board_width * self._encoder.board_height

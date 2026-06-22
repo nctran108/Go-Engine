@@ -1,3 +1,5 @@
+import os
+
 from go import RL
 from go import score
 from go import goboard
@@ -5,6 +7,7 @@ from go.gotypes import Player
 from tqdm import tqdm
 
 from collections import namedtuple
+import h5py
 
 
 class GameRecord(namedtuple('GameRecord', 'moves winner margin')):
@@ -57,5 +60,14 @@ def experience_simulation(num_games, agent1, agent2):
             collector2.complete_episode(reward=1)
             collector1.complete_episode(reward=-1)
         color1 = color1.other
+        if (i + 1) % 10 == 0:
+            if not os.path.exists('rl_agents'):
+                os.makedirs('rl_agents')
+            with h5py.File(f'rl_agents/experience_{i}.h5', 'w') as exp_out:
+                RL.combine_experience([collector1, collector2]).serialize(exp_out)
+            with h5py.File(f'rl_agents/agent_{i}.h5', 'w') as agent_out:
+                agent1.serialize(agent_out)
+    print('Finished simulating games.')
+
 
     return RL.combine_experience([collector1, collector2])
