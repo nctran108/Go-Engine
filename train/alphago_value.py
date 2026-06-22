@@ -12,7 +12,7 @@ alphago_value_network = alphaGoModel(input_shape)
 
 alphago_value = ValueAgent(alphago_value_network, encoder)
 
-experience = load_experience(h5py.File('rl_agents/alphago_rl_experience.h5', 'r'))
+experience = load_experience(h5py.File('rl_agents/experience_10.h5', 'r'))
 
 alphago_value.train(experience)
 
