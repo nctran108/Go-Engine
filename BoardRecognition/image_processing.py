@@ -42,7 +42,8 @@ class BoardRecognition:
 
         corners = []
         # find horizontal lines
-
+        horizontal_lines = []
+        
         # find verticle lines
 
         # find unique lines for both verticle and horizontal
