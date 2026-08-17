@@ -27,6 +27,7 @@ class ExperienceCollector:
     def begin_episode(self):
         self.current_episode_states = []
         self.current_episode_actions = []
+        self.current_episode_estimated_values = []
     
     def record_decision(self, state, action, estimated_value=0):
         self.current_episode_states.append(state)
@@ -50,13 +51,15 @@ class ExperienceCollector:
     def to_buffer(self):
         return ExperienceBuffer(states=np.array(self.states),
                                 actions=np.array(self.actions),
-                                rewards=np.array(self.rewards))
+                                rewards=np.array(self.rewards),
+                                advantages=np.array(self.advantages))
 
 def load_experience(h5file):
     return ExperienceBuffer(
             states=np.array(h5file['experience']['states']),
-            actions=np.array(h5file['experience']['action']),
-            rewards=np.array(h5file['experience']['rewards'])
+            actions=np.array(h5file['experience']['actions']),
+            rewards=np.array(h5file['experience']['rewards']),
+            advantages=np.array(h5file['experience']['advantages'])
             )
 
 def combine_experience(collectors) -> ExperienceBuffer:
@@ -72,16 +75,18 @@ def combine_experience(collectors) -> ExperienceBuffer:
 
 
 class ZeroExperienceBuffer:
-    def __init__(self, states, visit_counts, rewards):
+    def __init__(self, states, visit_counts, rewards, advantages):
         self.states = states
         self.visit_counts = visit_counts
         self.rewards = rewards
+        self.advantages = advantages
 
     def serialize(self, h5file):
         h5file.create_group('experience')
         h5file['experience'].create_dataset('states', data=self.states)
         h5file['experience'].create_dataset('visit_counts', data=self.visit_counts)
         h5file['experience'].create_dataset('rewards', data=self.rewards)
+        h5file['experience'].create_dataset('advantages', data=self.advantages)
 
 
 class ZeroExperienceCollector:
@@ -120,6 +125,6 @@ def combine_zero_experience(collectors: list[ZeroExperienceCollector]) -> ZeroEx
 def load_zero_experience(h5file):
     return ZeroExperienceBuffer(
             states=np.array(h5file['experience']['states']),
-            visit_counts=np.array(h5file['experience']['action']),
+            visit_counts=np.array(h5file['experience']['actions']),
             rewards=np.array(h5file['experience']['rewards'])
             )
