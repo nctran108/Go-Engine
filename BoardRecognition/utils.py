@@ -84,6 +84,29 @@ def writeImageWithPoints(image, points, name):
         os.makedirs(path)
 
     for point in points:
-        cv2.circle(output, point[0], radius=5, color=(0, 255, 0), thickness=-1)
+        p = np.asarray(point).reshape(-1)[:2]
+        cv2.circle(output, (int(round(p[0])), int(round(p[1]))), radius=12, color=(0, 255, 0), thickness=-1)
 
     cv2.imwrite(os.path.join(path, name), img= output)
+
+
+def writeImageWithGrid(image, corners, points, size, name):
+    """Draw the detected grid: outer quad in red, every grid line in blue, intersections in green."""
+    path = "./data/result"
+    output = image.copy()
+    if len(output.shape) == 2:
+        output = cv2.cvtColor(output.astype(np.uint8), cv2.COLOR_GRAY2BGR)
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+    rows, cols = points.shape[:2]
+    for r in range(rows):
+        cv2.line(output, tuple(points[r, 0].astype(int)), tuple(points[r, -1].astype(int)), (255, 0, 0), 2, cv2.LINE_AA)
+    for c in range(cols):
+        cv2.line(output, tuple(points[0, c].astype(int)), tuple(points[-1, c].astype(int)), (255, 0, 0), 2, cv2.LINE_AA)
+    for p in points.reshape(-1, 2):
+        cv2.circle(output, tuple(p.astype(int)), 4, (0, 255, 0), -1)
+    cv2.polylines(output, [np.asarray(corners).astype(np.int32)], True, (0, 0, 255), 3, cv2.LINE_AA)
+    cv2.putText(output, f"{size[0]} x {size[1]}", (30, 90), cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 0, 255), 6)
+
+    cv2.imwrite(os.path.join(path, name), img=output)

@@ -1,16 +1,22 @@
+import sys
 import cv2
-import numpy as np
 import image_processing
-import matplotlib.pyplot as plt
-import utils
 
-def main():
-    input = cv2.imread("./data/Zrzut ekranu 2020-04-11 o 15.42.14.png", cv2.IMREAD_COLOR)
 
-    preProcess_img = image_processing.PreProcessImage().process(input)
+def main(path="./data/11.png"):
+    image = cv2.imread(path, cv2.IMREAD_COLOR)
+    if image is None:
+        raise FileNotFoundError(path)
+
+    mask = image_processing.PreProcessImage().process(image)
 
     board = image_processing.BoardRecognition()
-    board.findFourCorners(preProcess_img)
+    corners, (cols, rows), points = board.process(image, mask)
+
+    print("corners (tl, tr, br, bl):", corners.round(1).tolist())
+    print(f"board size: {cols} x {rows}")
+    print("intersections:", points.shape, "-> see data/result/detected grid.png")
+
 
 if __name__ == "__main__":
-    main()
+    main(*sys.argv[1:])
